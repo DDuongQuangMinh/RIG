@@ -15,11 +15,11 @@ public class ModCreativeTabs {
 
     public static final RegistryObject<CreativeModeTab> RIG_TAB = CREATIVE_MODE_TABS.register("rig_tab", 
         () -> CreativeModeTab.builder()
-            .icon(() -> new ItemStack(ModItems.TITANIUM.get())) // Sets Titanium as the tab's icon
+            .icon(() -> new ItemStack(ModItems.TITANIUM_INGOT.get())) // Sets Titanium as the tab's icon
             .title(Component.translatable("creativetab.rig_tab"))
             .displayItems((parameters, output) -> {
                 // Add your items to the tab here
-                output.accept(ModItems.TITANIUM.get()); 
+                output.accept(ModItems.TITANIUM_INGOT.get()); 
             })
             .build());
 

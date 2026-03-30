@@ -13,6 +13,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext; // Make sure to import this!
 import org.slf4j.Logger;
 
 @Mod(RigMod.MODID)
@@ -21,13 +22,14 @@ public class RigMod
     public static final String MODID = "rigmod";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    // FIXED: Passed IEventBus directly into the constructor to clear the warning
-    public RigMod(IEventBus modEventBus) {
+    // FIXED: Must be an empty constructor for Forge to load it!
+    public RigMod() {
         
-        // FIXED: Changed "registerItems" to "register" to match your ModItems class
+        // This is how you correctly grab the Event Bus in 1.20.1
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+        
+        // Now you can pass it to your register methods
         ModItems.register(modEventBus); 
-        
-        // FIXED: Added this line so your custom tab actually loads into the game!
         ModCreativeTabs.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
