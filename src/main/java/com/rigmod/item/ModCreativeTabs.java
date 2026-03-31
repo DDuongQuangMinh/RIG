@@ -19,7 +19,8 @@ public class ModCreativeTabs {
             .title(Component.translatable("creativetab.rig_tab"))
             .displayItems((parameters, output) -> {
                 // Add your items to the tab here
-                output.accept(ModItems.TITANIUM_INGOT.get()); 
+                output.accept(ModItems.TITANIUM_INGOT.get());
+                output.accept(ModItems.STANDARD_LEVEL_1_HELMET.get());
             })
             .build());
 

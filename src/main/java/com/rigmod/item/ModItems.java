@@ -1,6 +1,8 @@
 package com.rigmod.item;
 
 import com.rigmod.RigMod;
+
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -12,6 +14,7 @@ public class ModItems {
 
     public static final RegistryObject<Item> TITANIUM_INGOT = ITEMS.register("titanium_ingot", () -> new Item(new Item.Properties()));
     
+    public static final RegistryObject<Item> STANDARD_LEVEL_1_HELMET = ITEMS.register("standard_level_1_helmet", () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.HELMET, new Item.Properties()));
     // Pass the IEventBus in here!
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
