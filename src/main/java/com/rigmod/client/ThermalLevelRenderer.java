@@ -1,9 +1,12 @@
 package com.rigmod.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.rigmod.RigMod;
 import com.rigmod.item.Custom3DArmorItem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -16,43 +19,54 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = RigMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ThermalLevelRenderer {
 
+    // 1. SET THE AMBIENT "COLD" WORLD LOOK (Dark Purple/Blue)
     @SubscribeEvent
     public static void onFogColor(ViewportEvent.ComputeFogColor event) {
         if (isWearingThermal()) {
-            // Dark Purple/Blue background
             event.setRed(0.1F);
             event.setGreen(0.0F);
-            event.setBlue(0.3F); 
+            event.setBlue(0.3F);
         }
     }
 
+    // 2. THE FULL BODY HEAT OVERRIDE
     @SubscribeEvent
-    public static void onRenderEntity(RenderLivingEvent.Pre<? extends LivingEntity, ?> event) {
+    public static void onRenderEntityPre(RenderLivingEvent.Pre<? extends LivingEntity, ?> event) {
         if (isWearingThermal()) {
             LivingEntity entity = event.getEntity();
-            float health = entity.getHealth() / entity.getMaxHealth();
+            
+            // Calculate Heat based on health (1.0 = Healthy/Hot, 0.0 = Dead/Cold)
+            float heat = entity.getHealth() / entity.getMaxHealth();
 
-            // IRONBOW PALETTE CALCULATION
-            // This mimics the real-life heat map colors (Yellow = Hot, Purple = Cold)
-            float r, g, b;
-
-            if (health > 0.8f) { // Hottest: Yellow/White
-                r = 1.0f; g = 1.0f; b = 0.5f;
-            } else if (health > 0.5f) { // Hot: Orange/Red
-                r = 1.0f; g = 0.4f; b = 0.0f;
-            } else if (health > 0.2f) { // Warm: Magenta/Pink
-                r = 0.8f; g = 0.0f; b = 0.8f;
-            } else { // Coldest: Blue/Purple
-                r = 0.3f; g = 0.0f; b = 1.0f;
+            // Setup the "Solid Color" render state
+            RenderSystem.disableBlend();
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
+            
+            // COLOR MAPPING (Ironbow Palette)
+            // This fills the WHOLE body with these colors
+            if (heat > 0.75f) {
+                // Hottest: Yellow-White
+                RenderSystem.setShaderColor(1.0f, 1.0f, 0.4f, 1.0f);
+            } else if (heat > 0.4f) {
+                // Hot: Vibrant Orange-Red
+                RenderSystem.setShaderColor(1.0f, 0.2f, 0.0f, 1.0f);
+            } else {
+                // Warm/Cooling: Magenta/Purple
+                RenderSystem.setShaderColor(0.6f, 0.0f, 0.8f, 1.0f);
             }
 
-            RenderSystem.setShaderColor(r, g, b, 1.0F);
+            // This tells Minecraft to ignore the lighting of the world (stay bright in caves)
+            RenderSystem.enableDepthTest();
         }
     }
 
     @SubscribeEvent
     public static void onRenderEntityPost(RenderLivingEvent.Post<? extends LivingEntity, ?> event) {
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        if (isWearingThermal()) {
+            // CRITICAL: Reset the shader color so the rest of the world isn't ruined!
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.enableBlend();
+        }
     }
 
     private static boolean isWearingThermal() {

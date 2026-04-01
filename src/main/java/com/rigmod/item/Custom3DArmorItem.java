@@ -49,17 +49,18 @@ public class Custom3DArmorItem extends ArmorItem {
                     break;
 
                 case 3: // THERMAL
-                // ABSOLUTELY NO NIGHT VISION
-                player.removeEffect(MobEffects.NIGHT_VISION);
+                    player.removeEffect(MobEffects.NIGHT_VISION); // Keep world dark
 
-                // Apply glowing so the ThermalLevelRenderer can "paint" them
-                AABB boundingBox = player.getBoundingBox().inflate(40.0D);
-                List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, entity -> entity != player);
-                
-                for (LivingEntity target : entities) {
-                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
-                }
-                break;
+                    // Search for entities
+                    AABB boundingBox = player.getBoundingBox().inflate(40.0D);
+                    List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, entity -> entity != player);
+                    
+                    for (LivingEntity target : entities) {
+                        // We still use Glowing because it forces the entity to render 
+                        // even if they are behind a wall or in a dark cave!
+                        target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                    }
+                    break;
             }
 
             // 3. UPDATE STATE

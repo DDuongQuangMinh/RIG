@@ -31,9 +31,8 @@ public class VisionOverlay {
                 guiGraphics.fill(0, 0, width, height, 0x55333333); 
                 
             } else if (mode == 3) {
-                // DEEP PURPLE THERMAL BASE
-                // This provides the dark purple ambient light seen in your image
-                guiGraphics.fill(0, 0, width, height, 0x771A0033); 
+                // Semi-transparent deep violet/blue
+                guiGraphics.fill(0, 0, width, height, 0x8815002B); 
             }
         }
     };
