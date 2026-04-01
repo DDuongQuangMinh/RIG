@@ -48,19 +48,18 @@ public class Custom3DArmorItem extends ArmorItem {
                     player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
                     break;
 
-                case 3: // THERMAL VISION
-                    // Force remove Night Vision every tick to keep the world dark for the Blue Fog
-                    player.removeEffect(MobEffects.NIGHT_VISION);
+                case 3: // THERMAL
+                // ABSOLUTELY NO NIGHT VISION
+                player.removeEffect(MobEffects.NIGHT_VISION);
 
-                    // Scan for heat signatures (Living Entities)
-                    AABB boundingBox = player.getBoundingBox().inflate(30.0D);
-                    List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, entity -> entity != player);
-                    
-                    for (LivingEntity target : entities) {
-                        // Apply short glowing effect to see signatures through walls
-                        target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
-                    }
-                    break;
+                // Apply glowing so the ThermalLevelRenderer can "paint" them
+                AABB boundingBox = player.getBoundingBox().inflate(40.0D);
+                List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, entity -> entity != player);
+                
+                for (LivingEntity target : entities) {
+                    target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                }
+                break;
             }
 
             // 3. UPDATE STATE

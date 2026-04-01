@@ -13,16 +13,27 @@ public class VisionOverlay {
 
         ItemStack helmet = mc.player.getItemBySlot(EquipmentSlot.HEAD);
         
-        // Ensure they are wearing YOUR custom helmet
         if (helmet.getItem() instanceof Custom3DArmorItem) {
             int mode = helmet.getOrCreateTag().getInt("VisionMode");
 
             if (mode == 1) {
-                guiGraphics.fill(0, 0, width, height, 0x3300FF00); 
+                // MILITARY FOREST GREEN (Matching your image)
+                // Alpha 0x66 makes it thicker. 
+                // Color 004400 is a deep, rich green that reacts well to light.
+                guiGraphics.fill(0, 0, width, height, 0x11000000);
+                guiGraphics.fill(0, 0, width, height, 0x66004400); 
+                
             } else if (mode == 2) {
-                guiGraphics.fill(0, 0, width, height, 0x22E0FFFF); 
+                // TACTICAL WHITE PHOSPHOR (Silver/Grey look)
+                // Using a desaturated blue-grey to match the "Exploit?" side of your image.
+                // This makes the world look cold and grey rather than bright blue.
+                guiGraphics.fill(0, 0, width, height, 0x11000000);
+                guiGraphics.fill(0, 0, width, height, 0x55333333); 
+                
             } else if (mode == 3) {
-                guiGraphics.fill(0, 0, width, height, 0x55000022); 
+                // DEEP PURPLE THERMAL BASE
+                // This provides the dark purple ambient light seen in your image
+                guiGraphics.fill(0, 0, width, height, 0x771A0033); 
             }
         }
     };

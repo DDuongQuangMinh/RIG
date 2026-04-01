@@ -16,45 +16,42 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = RigMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ThermalLevelRenderer {
 
-    // 1. MAKE THE WORLD DARK BLUE (Like the image background)
     @SubscribeEvent
     public static void onFogColor(ViewportEvent.ComputeFogColor event) {
         if (isWearingThermal()) {
-            event.setRed(0.0F);
+            // Dark Purple/Blue background
+            event.setRed(0.1F);
             event.setGreen(0.0F);
-            event.setBlue(0.15F); // Deep Navy Blue base
+            event.setBlue(0.3F); 
         }
     }
 
-    @SubscribeEvent
-    public static void onFogRender(ViewportEvent.RenderFog event) {
-        if (isWearingThermal()) {
-            // Pull fog closer to hide the "normal" world details
-            event.setNearPlaneDistance(0.0F);
-            event.setFarPlaneDistance(20.0F);
-            event.setCanceled(true); 
-        }
-    }
-
-    // 2. MAKE ENTITIES GLOW RED/ORANGE/YELLOW (Real-life Heat signatures)
     @SubscribeEvent
     public static void onRenderEntity(RenderLivingEvent.Pre<? extends LivingEntity, ?> event) {
         if (isWearingThermal()) {
             LivingEntity entity = event.getEntity();
-            
-            // Set the color based on "Body Heat" 
-            // In a real device, larger/healthier mobs look hotter
-            float healthPercent = entity.getHealth() / entity.getMaxHealth();
-            
-            // Render the entity with a solid heat color overlay
-            // Hottest (100% health) = White/Red, Damaged = Orange/Yellow
-            RenderSystem.setShaderColor(1.0F, healthPercent * 0.5F, 0.0F, 1.0F);
+            float health = entity.getHealth() / entity.getMaxHealth();
+
+            // IRONBOW PALETTE CALCULATION
+            // This mimics the real-life heat map colors (Yellow = Hot, Purple = Cold)
+            float r, g, b;
+
+            if (health > 0.8f) { // Hottest: Yellow/White
+                r = 1.0f; g = 1.0f; b = 0.5f;
+            } else if (health > 0.5f) { // Hot: Orange/Red
+                r = 1.0f; g = 0.4f; b = 0.0f;
+            } else if (health > 0.2f) { // Warm: Magenta/Pink
+                r = 0.8f; g = 0.0f; b = 0.8f;
+            } else { // Coldest: Blue/Purple
+                r = 0.3f; g = 0.0f; b = 1.0f;
+            }
+
+            RenderSystem.setShaderColor(r, g, b, 1.0F);
         }
     }
 
     @SubscribeEvent
     public static void onRenderEntityPost(RenderLivingEvent.Post<? extends LivingEntity, ?> event) {
-        // Reset the color so other things don't turn red!
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
