@@ -27,6 +27,10 @@ public class ModItems {
     public static final RegistryObject<Item> STANDARD_LEVEL_1_CHEST_WHITE = ITEMS.register("standard_level_1_chest_white",
             () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.CHESTPLATE, new Item.Properties(), "standard_level_1_chest_white.png"));
 
+    // NEW: Leggings
+    public static final RegistryObject<Item> STANDARD_LEVEL_1_LEGGINGS = ITEMS.register("standard_level_1_leggings",
+            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.LEGGINGS, new Item.Properties(), "standard_level_1_legging.png"));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

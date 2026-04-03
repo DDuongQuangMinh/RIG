@@ -3,6 +3,7 @@ package com.rigmod.item;
 import com.rigmod.RigMod;
 import com.rigmod.client.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
+import com.rigmod.client.StandardLevel1LeggingsModel; // 1. ADDED THIS IMPORT
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.nbt.CompoundTag;
@@ -25,9 +26,8 @@ import java.util.function.Consumer;
 
 public class Custom3DArmorItem extends ArmorItem {
 
-    private final String customTexture; // Stores the texture name for this specific item
+    private final String customTexture; 
 
-    // NEW: We added customTexture to the constructor
     public Custom3DArmorItem(ArmorMaterial material, Type type, Properties properties, String customTexture) {
         super(material, type, properties);
         this.customTexture = customTexture;
@@ -35,7 +35,6 @@ public class Custom3DArmorItem extends ArmorItem {
 
     @Override
     public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-        // If a custom texture was provided, use it! Otherwise, fall back to vanilla behavior.
         if (this.customTexture != null && !this.customTexture.isEmpty()) {
             return RigMod.MODID + ":textures/models/armor/" + this.customTexture;
         }
@@ -44,7 +43,6 @@ public class Custom3DArmorItem extends ArmorItem {
 
     @Override
     public void onArmorTick(ItemStack stack, Level level, Player player) {
-        // SAFETY CHECK: Only the Helmet should control vision modes!
         if (!level.isClientSide() && this.getType() == Type.HELMET) {
             CompoundTag playerNBT = player.getPersistentData();
             int currentMode = stack.getOrCreateTag().getInt("VisionMode");
@@ -95,6 +93,19 @@ public class Custom3DArmorItem extends ArmorItem {
                 if (armorSlot == EquipmentSlot.CHEST) {
                     StandardLevel1ChestModel<?> customModel = new StandardLevel1ChestModel<>(
                             Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
+                    customModel.young = _default.young;
+                    customModel.crouching = _default.crouching;
+                    customModel.riding = _default.riding;
+                    customModel.rightArmPose = _default.rightArmPose;
+                    customModel.leftArmPose = _default.leftArmPose;
+                    return customModel;
+                }
+
+                // 2. --- NEW: ADDED LEGGINGS LOGIC HERE ---
+                if (armorSlot == EquipmentSlot.LEGS) {
+                    StandardLevel1LeggingsModel<?> customModel = new StandardLevel1LeggingsModel<>(
+                            Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
+                    // We copy over the vanilla animation states so your leggings bend when you crouch/ride!
                     customModel.young = _default.young;
                     customModel.crouching = _default.crouching;
                     customModel.riding = _default.riding;

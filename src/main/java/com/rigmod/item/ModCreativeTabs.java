@@ -24,6 +24,9 @@ public class ModCreativeTabs {
                 // Add both variants to the tab
                 output.accept(ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get());
                 output.accept(ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get());
+
+                // Add leggings to the tab
+                output.accept(ModItems.STANDARD_LEVEL_1_LEGGINGS.get());
             })
             .build());
 

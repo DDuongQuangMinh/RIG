@@ -2,6 +2,7 @@ package com.rigmod;
 
 import com.mojang.logging.LogUtils;
 import com.rigmod.client.StandardLevel1HelmetModel;
+import com.rigmod.client.StandardLevel1LeggingsModel;
 import com.rigmod.client.VisionOverlay;
 import com.rigmod.client.KeyBindings;
 import com.rigmod.client.StandardLevel1ChestModel;
@@ -85,6 +86,8 @@ public class RigMod
             event.registerLayerDefinition(StandardLevel1HelmetModel.LAYER_LOCATION, StandardLevel1HelmetModel::createBodyLayer);
             
             event.registerLayerDefinition(StandardLevel1ChestModel.LAYER_LOCATION, StandardLevel1ChestModel::createBodyLayer);
+
+            event.registerLayerDefinition(StandardLevel1LeggingsModel.LAYER_LOCATION, StandardLevel1LeggingsModel::createBodyLayer);
         }
 
         @SubscribeEvent
