@@ -7,45 +7,53 @@ import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.crafting.Ingredient;
 
+import java.util.function.Supplier;
+
 public enum ModArmorMaterials implements ArmorMaterial {
-    // Vanilla Iron Stats:
-    // Multiplier: 15, Defense: 2, Enchantability: 9, Toughness: 0.0F, Knockback Resist: 0.0F
-    STANDARD_LEVEL_1("standard_level_1", 15, 2, 9, SoundEvents.ARMOR_EQUIP_IRON, 0.0F, 0.0F);
+    // We removed the confusing number arrays from this line
+    STANDARD_LEVEL_1("standard_level_1", 15, 9, SoundEvents.ARMOR_EQUIP_IRON, 0.0F, 0.0F, () -> Ingredient.of(ModItems.TITANIUM_INGOT.get()));
 
     private final String name;
     private final int durabilityMultiplier;
-    private final int defense;
     private final int enchantability;
     private final SoundEvent equipSound;
     private final float toughness;
     private final float knockbackResistance;
+    private final Supplier<Ingredient> repairIngredient;
 
-    ModArmorMaterials(String name, int durabilityMultiplier, int defense, int enchantability, SoundEvent equipSound, float toughness, float knockbackResistance) {
+    ModArmorMaterials(String name, int durabilityMultiplier, int enchantability, SoundEvent equipSound, float toughness, float knockbackResistance, Supplier<Ingredient> repairIngredient) {
         this.name = name;
         this.durabilityMultiplier = durabilityMultiplier;
-        this.defense = defense;
         this.enchantability = enchantability;
         this.equipSound = equipSound;
         this.toughness = toughness;
         this.knockbackResistance = knockbackResistance;
+        this.repairIngredient = repairIngredient;
     }
 
-    // FIXED: Changed from getDurabilityForSlot to getDurabilityForType
+    // FIXED: Explicitly define the base durability for every armor piece
     @Override
     public int getDurabilityForType(ArmorItem.Type type) {
-        if (type == ArmorItem.Type.HELMET) {
-            return this.durabilityMultiplier * 11;
+        int baseDurability = 0;
+        switch (type) {
+            case HELMET: baseDurability = 11; break;
+            case CHESTPLATE: baseDurability = 16; break;
+            case LEGGINGS: baseDurability = 15; break;
+            case BOOTS: baseDurability = 13; break;
         }
-        return 0; 
+        return baseDurability * this.durabilityMultiplier;
     }
 
-    // FIXED: Changed from getDefenseForSlot to getDefenseForType
+    // FIXED: Explicitly define the defense points for every armor piece
     @Override
     public int getDefenseForType(ArmorItem.Type type) {
-        if (type == ArmorItem.Type.HELMET) {
-            return this.defense;
+        switch (type) {
+            case HELMET: return 2;
+            case CHESTPLATE: return 6; // Your RIG suit now correctly gets 6 armor points!
+            case LEGGINGS: return 5;
+            case BOOTS: return 2;
+            default: return 0;
         }
-        return 0;
     }
 
     @Override
@@ -60,7 +68,7 @@ public enum ModArmorMaterials implements ArmorMaterial {
 
     @Override
     public Ingredient getRepairIngredient() {
-        return Ingredient.of(ModItems.TITANIUM_INGOT.get());
+        return this.repairIngredient.get();
     }
 
     @Override
