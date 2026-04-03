@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "rigmod:item/standard_level_1_chest_white"
+  }
+}

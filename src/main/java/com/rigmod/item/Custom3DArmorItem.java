@@ -1,11 +1,14 @@
 package com.rigmod.item;
 
+import com.rigmod.RigMod;
+import com.rigmod.client.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -22,48 +25,52 @@ import java.util.function.Consumer;
 
 public class Custom3DArmorItem extends ArmorItem {
 
-    public Custom3DArmorItem(ArmorMaterial material, Type type, Properties properties) {
+    private final String customTexture; // Stores the texture name for this specific item
+
+    // NEW: We added customTexture to the constructor
+    public Custom3DArmorItem(ArmorMaterial material, Type type, Properties properties, String customTexture) {
         super(material, type, properties);
+        this.customTexture = customTexture;
+    }
+
+    @Override
+    public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
+        // If a custom texture was provided, use it! Otherwise, fall back to vanilla behavior.
+        if (this.customTexture != null && !this.customTexture.isEmpty()) {
+            return RigMod.MODID + ":textures/models/armor/" + this.customTexture;
+        }
+        return super.getArmorTexture(stack, entity, slot, type);
     }
 
     @Override
     public void onArmorTick(ItemStack stack, Level level, Player player) {
-        if (!level.isClientSide()) {
+        // SAFETY CHECK: Only the Helmet should control vision modes!
+        if (!level.isClientSide() && this.getType() == Type.HELMET) {
             CompoundTag playerNBT = player.getPersistentData();
             int currentMode = stack.getOrCreateTag().getInt("VisionMode");
             int prevMode = playerNBT.getInt("RigMod_PrevVisionMode");
 
-            // 1. CLEANUP: Remove Night Vision if switching OUT of NVG modes OR into Thermal
-            // This ensures no "green tint" or "brightness" interferes with the blue thermal fog
             if (currentMode != prevMode) {
                 if (currentMode == 0 || currentMode == 3) {
                     player.removeEffect(MobEffects.NIGHT_VISION);
                 }
             }
 
-            // 2. MODE LOGIC
             switch (currentMode) {
-                case 1: // Green NVG
-                case 2: // White Phosphor NVG
+                case 1:
+                case 2:
                     player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
                     break;
-
-                case 3: // THERMAL
-                    player.removeEffect(MobEffects.NIGHT_VISION); // Keep world dark
-
-                    // Search for entities
+                case 3:
+                    player.removeEffect(MobEffects.NIGHT_VISION);
                     AABB boundingBox = player.getBoundingBox().inflate(40.0D);
                     List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, entity -> entity != player);
-                    
                     for (LivingEntity target : entities) {
-                        // We still use Glowing because it forces the entity to render 
-                        // even if they are behind a wall or in a dark cave!
                         target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
                     }
                     break;
             }
 
-            // 3. UPDATE STATE
             playerNBT.putInt("RigMod_PrevVisionMode", currentMode);
         }
     }
@@ -73,18 +80,29 @@ public class Custom3DArmorItem extends ArmorItem {
         consumer.accept(new IClientItemExtensions() {
             @Override
             public @NotNull HumanoidModel<?> getHumanoidArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlot armorSlot, HumanoidModel<?> _default) {
+                
                 if (armorSlot == EquipmentSlot.HEAD) {
                     StandardLevel1HelmetModel<?> customModel = new StandardLevel1HelmetModel<>(
                             Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1HelmetModel.LAYER_LOCATION));
-                    
                     customModel.young = _default.young;
                     customModel.crouching = _default.crouching;
                     customModel.riding = _default.riding;
                     customModel.rightArmPose = _default.rightArmPose;
                     customModel.leftArmPose = _default.leftArmPose;
-
                     return customModel;
                 }
+                
+                if (armorSlot == EquipmentSlot.CHEST) {
+                    StandardLevel1ChestModel<?> customModel = new StandardLevel1ChestModel<>(
+                            Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
+                    customModel.young = _default.young;
+                    customModel.crouching = _default.crouching;
+                    customModel.riding = _default.riding;
+                    customModel.rightArmPose = _default.rightArmPose;
+                    customModel.leftArmPose = _default.leftArmPose;
+                    return customModel;
+                }
+
                 return _default; 
             }
         });
