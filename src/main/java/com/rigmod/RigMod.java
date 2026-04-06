@@ -1,6 +1,7 @@
 package com.rigmod;
 
 import com.mojang.logging.LogUtils;
+import com.rigmod.client.Level2HelmetModel; // Make sure this is imported!
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
 import com.rigmod.client.VisionOverlay;
@@ -11,6 +12,7 @@ import com.rigmod.item.ModItems;
 import com.rigmod.item.ModCreativeTabs;
 import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CycleVisionModePacket;
+import com.rigmod.network.packet.CycleRadarModePacket; // NEW: Import the radar packet
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -56,7 +58,6 @@ public class RigMod
         MinecraftForge.EVENT_BUS.register(this);
     }
 
-    // MERGED: Network registration goes inside this single commonSetup method
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             ModMessages.register(); 
@@ -64,30 +65,25 @@ public class RigMod
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        // Left empty intentionally so your item doesn't duplicate into vanilla tabs
     }
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // Code to run when the server starts
     }
 
-    // MERGED: All MOD bus client events (Overlays, Layers, Keybinds) live in this one class
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents
     {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            // Client setup code
         }
 
         @SubscribeEvent
         public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
             event.registerLayerDefinition(StandardLevel1HelmetModel.LAYER_LOCATION, StandardLevel1HelmetModel::createBodyLayer);
-            
             event.registerLayerDefinition(StandardLevel1ChestModel.LAYER_LOCATION, StandardLevel1ChestModel::createBodyLayer);
-
             event.registerLayerDefinition(StandardLevel1LeggingsModel.LAYER_LOCATION, StandardLevel1LeggingsModel::createBodyLayer);
+            event.registerLayerDefinition(Level2HelmetModel.LAYER_LOCATION, Level2HelmetModel::createBodyLayer);
         }
 
         @SubscribeEvent
@@ -98,54 +94,46 @@ public class RigMod
         @SubscribeEvent
         public static void onKeyRegister(RegisterKeyMappingsEvent event) {
             event.register(KeyBindings.CYCLE_VISION_KEY);
+            event.register(KeyBindings.CYCLE_RADAR_KEY); // NEW: Registers the 'R' key
         }
     }
 
-    // This stays separate because it listens to the FORGE bus, not the MOD bus
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
     public static class ClientForgeEvents {
         
         @SubscribeEvent
         public static void onClientTick(TickEvent.ClientTickEvent event) {
+            // Listens for 'V'
             while (KeyBindings.CYCLE_VISION_KEY.consumeClick()) {
                 ModMessages.sendToServer(new CycleVisionModePacket());
             }
+            // NEW: Listens for 'R'
+            while (KeyBindings.CYCLE_RADAR_KEY.consumeClick()) {
+                ModMessages.sendToServer(new CycleRadarModePacket());
+            }
         }
 
-        // --- FIXED: FIRST PERSON ARM RENDERER ---
         @SubscribeEvent
         public static void onRenderArm(RenderArmEvent event) {
             Player player = event.getPlayer();
             ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
 
-            // Check if the right arm is on screen AND the player is wearing our RIG suit
             if (event.getArm() == HumanoidArm.RIGHT && chest.getItem() instanceof Custom3DArmorItem armorItem) {
                 Minecraft mc = Minecraft.getInstance();
 
-                // 1. Get the correct chestplate texture (Bronze or White)
                 String textureName = armorItem.getArmorTexture(chest, player, EquipmentSlot.CHEST, null);
                 if (textureName == null) return; 
                 
                 ResourceLocation texture = new ResourceLocation(textureName);
-
-                // 2. Fetch our custom model
                 StandardLevel1ChestModel<?> model = new StandardLevel1ChestModel<>(mc.getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
-
-                // 3. Get the renderer ready
                 VertexConsumer vertexConsumer = event.getMultiBufferSource().getBuffer(RenderType.armorCutoutNoCull(texture));
 
                 event.getPoseStack().pushPose();
 
-                // 4. SAFETY RESET: We must force the rotation to 0 so the 3rd-person walking animation 
-                // doesn't make your first-person tablet swing wildly off-screen!
                 model.rightArm.xRot = 0.0F;
                 model.rightArm.yRot = 0.0F;
                 model.rightArm.zRot = 0.0F;
 
-                // (Notice I completely deleted the event.getPoseStack().translate(...) line here!
-                // The event matrix is already perfectly aligned with the vanilla arm.)
-
-                // 5. Render JUST the right arm part (the tablet)
                 model.rightArm.render(event.getPoseStack(), vertexConsumer, event.getPackedLight(), OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
 
                 event.getPoseStack().popPose();

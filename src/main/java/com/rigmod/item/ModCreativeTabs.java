@@ -27,6 +27,9 @@ public class ModCreativeTabs {
 
                 // Add leggings to the tab
                 output.accept(ModItems.STANDARD_LEVEL_1_LEGGINGS.get());
+
+                // Add the new Engineering Level 2 Helmet to the tab
+                output.accept(ModItems.ENGINEERING_LEVEL_2_HELMET.get());
             })
             .build());
 

@@ -3,6 +3,7 @@ package com.rigmod.item;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.rigmod.RigMod;
+import com.rigmod.client.Level2HelmetModel;
 import com.rigmod.client.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
@@ -33,18 +34,19 @@ import java.util.function.Consumer;
 public class Custom3DArmorItem extends ArmorItem {
 
     private final String customTexture;
+    private final int armorLevel; // NEW: Differentiates Level 1 vs Level 2
     private Multimap<Attribute, AttributeModifier> customModifiers;
 
-    // Unique IDs so our armor stats don't conflict with other items
     private static final UUID HEALTH_MODIFIER_UUID = UUID.fromString("d2b3dbe3-0834-4373-90b7-eba5785e061b");
     private static final UUID SPEED_MODIFIER_UUID = UUID.fromString("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d");
 
-    public Custom3DArmorItem(ArmorMaterial material, Type type, Properties properties, String customTexture) {
+    // NEW: Constructor now requires the armorLevel
+    public Custom3DArmorItem(ArmorMaterial material, Type type, Properties properties, String customTexture, int armorLevel) {
         super(material, type, properties);
         this.customTexture = customTexture;
+        this.armorLevel = armorLevel;
     }
 
-    // --- ATTRIBUTES (CHESTPLATE & LEGGINGS) ---
     @Override
     public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
         if (slot == this.getType().getSlot()) {
@@ -57,9 +59,7 @@ public class Custom3DArmorItem extends ArmorItem {
                             HEALTH_MODIFIER_UUID, "Chestplate health boost", 8.0D, AttributeModifier.Operation.ADDITION));
                 }
 
-                // ✅ NEW: Leggings Speed Boost (100% Invisible)
                 if (this.getType() == Type.LEGGINGS) {
-                    // 0.20D is exactly a 20% speed boost, which equals the Speed I potion effect!
                     builder.put(Attributes.MOVEMENT_SPEED, new AttributeModifier(
                             SPEED_MODIFIER_UUID, "Leggings speed boost", 0.20D, AttributeModifier.Operation.MULTIPLY_TOTAL));
                 }
@@ -71,7 +71,6 @@ public class Custom3DArmorItem extends ArmorItem {
         return super.getDefaultAttributeModifiers(slot);
     }
 
-    // --- TEXTURE ---
     @Override
     public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
         if (this.customTexture != null && !this.customTexture.isEmpty()) {
@@ -80,12 +79,11 @@ public class Custom3DArmorItem extends ArmorItem {
         return super.getArmorTexture(stack, entity, slot, type);
     }
 
-    // --- MAIN LOGIC ---
     @Override
     public void onArmorTick(ItemStack stack, Level level, Player player) {
         if (level.isClientSide()) return;
 
-        // Clamp health if chestplate is removed
+        // Clamp health
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
         if (!(chest.getItem() instanceof Custom3DArmorItem chestItem && chestItem.getType() == Type.CHESTPLATE)) {
             if (player.getHealth() > player.getMaxHealth()) {
@@ -96,38 +94,86 @@ public class Custom3DArmorItem extends ArmorItem {
         // --- HELMET LOGIC ---
         if (this.getType() == Type.HELMET) {
             CompoundTag tag = stack.getOrCreateTag();
-            int mode = tag.getInt("VisionMode");
+            int visionMode = tag.getInt("VisionMode");
 
-            switch (mode) {
-                case 1:
-                case 2:
-                    player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
-                    break;
-                case 3:
-                    player.removeEffect(MobEffects.NIGHT_VISION);
+            // LEVEL 1 HELMET LOGIC
+            if (this.armorLevel == 1) {
+                switch (visionMode) {
+                    case 1:
+                    case 2:
+                        MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
+                        if (currentNV == null || currentNV.getDuration() <= 200) {
+                            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
+                        }
+                        break;
+                    case 3:
+                        player.removeEffect(MobEffects.NIGHT_VISION);
+                        AABB box = player.getBoundingBox().inflate(40.0D);
+                        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
+                        for (LivingEntity target : entities) {
+                            MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
+                            if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
+                                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                            }
+                        }
+                        break;
+                    default:
+                        player.removeEffect(MobEffects.NIGHT_VISION);
+                        break;
+                }
+            } 
+            
+            // LEVEL 2 HELMET LOGIC (No Night Vision)
+            else if (this.armorLevel == 2) {
+                int radarMode = tag.getInt("RadarMode"); // Reads the new keybind tag
+
+                // 1. THERMAL VISION (Mode 1)
+                if (visionMode == 1) {
                     AABB box = player.getBoundingBox().inflate(40.0D);
                     List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
                     for (LivingEntity target : entities) {
-                        target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                        MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
+                        if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
+                            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                        }
                     }
-                    break;
-                default:
-                    player.removeEffect(MobEffects.NIGHT_VISION);
-                    break;
+                }
+
+                // 2. RADAR SCANNER (0=Off, 1=Mobs, 2=Players, 3=Both)
+                // Runs once per second (20 ticks) to avoid spamming the Action Bar
+                if (radarMode > 0 && player.tickCount % 20 == 0) {
+                    AABB radarBox = player.getBoundingBox().inflate(50.0D);
+                    int entityCount = 0;
+                    int playerCount = 0;
+
+                    if (radarMode == 1 || radarMode == 3) {
+                        List<LivingEntity> mobs = level.getEntitiesOfClass(LivingEntity.class, radarBox, e -> e != player && !(e instanceof Player));
+                        entityCount = mobs.size();
+                    }
+                    if (radarMode == 2 || radarMode == 3) {
+                        List<Player> players = level.getEntitiesOfClass(Player.class, radarBox, e -> e != player);
+                        playerCount = players.size();
+                    }
+
+                    // Display the dynamic radar readout above the hotbar
+                    String radarMsg = "§b[RADAR] ";
+                    if (radarMode == 1) radarMsg += "Hostiles/Entities: " + entityCount;
+                    else if (radarMode == 2) radarMsg += "Players: " + playerCount;
+                    else if (radarMode == 3) radarMsg += "Entities: " + entityCount + " | Players: " + playerCount;
+
+                    player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
+                }
             }
         }
 
         // --- CHESTPLATE LOGIC ---
         if (this.getType() == Type.CHESTPLATE) {
-            // Regen half a heart every 2 seconds
             if (player.tickCount % 40 == 0) {
                 if (player.getHealth() < player.getMaxHealth()) {
                     player.heal(1.0F);
                 }
             }
         }
-        
-        // (Leggings tick logic removed because Attributes handle it perfectly now)
     }
 
     // --- MODEL ---
@@ -135,23 +181,31 @@ public class Custom3DArmorItem extends ArmorItem {
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
             @Override
-            public @NotNull HumanoidModel<?> getHumanoidArmorModel(
-                    LivingEntity entityLiving, ItemStack itemStack, EquipmentSlot armorSlot, HumanoidModel<?> _default) {
+            public @NotNull HumanoidModel<?> getHumanoidArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlot armorSlot, HumanoidModel<?> _default) {
 
                 if (armorSlot == EquipmentSlot.HEAD) {
-                    StandardLevel1HelmetModel<?> customModel = new StandardLevel1HelmetModel<>(
-                            Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1HelmetModel.LAYER_LOCATION));
-                    customModel.young = _default.young;
-                    customModel.crouching = _default.crouching;
-                    customModel.riding = _default.riding;
-                    customModel.rightArmPose = _default.rightArmPose;
-                    customModel.leftArmPose = _default.leftArmPose;
-                    return customModel;
+                    // Serves the correct model based on the armor Tier
+                    if (Custom3DArmorItem.this.armorLevel == 2) {
+                        Level2HelmetModel<?> customModel2 = new Level2HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2HelmetModel.LAYER_LOCATION));
+                        customModel2.young = _default.young;
+                        customModel2.crouching = _default.crouching;
+                        customModel2.riding = _default.riding;
+                        customModel2.rightArmPose = _default.rightArmPose;
+                        customModel2.leftArmPose = _default.leftArmPose;
+                        return customModel2;
+                    } else {
+                        StandardLevel1HelmetModel<?> customModel1 = new StandardLevel1HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1HelmetModel.LAYER_LOCATION));
+                        customModel1.young = _default.young;
+                        customModel1.crouching = _default.crouching;
+                        customModel1.riding = _default.riding;
+                        customModel1.rightArmPose = _default.rightArmPose;
+                        customModel1.leftArmPose = _default.leftArmPose;
+                        return customModel1;
+                    }
                 }
 
                 if (armorSlot == EquipmentSlot.CHEST) {
-                    StandardLevel1ChestModel<?> customModel = new StandardLevel1ChestModel<>(
-                            Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
+                    StandardLevel1ChestModel<?> customModel = new StandardLevel1ChestModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
                     customModel.young = _default.young;
                     customModel.crouching = _default.crouching;
                     customModel.riding = _default.riding;
@@ -161,8 +215,7 @@ public class Custom3DArmorItem extends ArmorItem {
                 }
 
                 if (armorSlot == EquipmentSlot.LEGS) {
-                    StandardLevel1LeggingsModel<?> customModel = new StandardLevel1LeggingsModel<>(
-                            Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
+                    StandardLevel1LeggingsModel<?> customModel = new StandardLevel1LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
                     customModel.young = _default.young;
                     customModel.crouching = _default.crouching;
                     customModel.riding = _default.riding;

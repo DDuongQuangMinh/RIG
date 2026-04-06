@@ -15,21 +15,30 @@ public class ModItems {
     public static final RegistryObject<Item> TITANIUM_INGOT = ITEMS.register("titanium_ingot",
             () -> new Item(new Item.Properties()));
 
-    // Helmet (Passes null because it doesn't need a texture override)
+    // --- LEVEL 1 ARMOR (Tier 1) ---
+    
+    // Helmet
     public static final RegistryObject<Item> STANDARD_LEVEL_1_HELMET = ITEMS.register("standard_level_1_helmet",
-            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.HELMET, new Item.Properties(), null));
+            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.HELMET, new Item.Properties(), null, 1));
 
     // BRONZE Chestplate
     public static final RegistryObject<Item> STANDARD_LEVEL_1_CHEST_BRONZE = ITEMS.register("standard_level_1_chest_bronze",
-            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.CHESTPLATE, new Item.Properties(), "standard_level_1_chest_bronze.png"));
+            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.CHESTPLATE, new Item.Properties(), "standard_level_1_chest_bronze.png", 1));
 
     // WHITE Chestplate
     public static final RegistryObject<Item> STANDARD_LEVEL_1_CHEST_WHITE = ITEMS.register("standard_level_1_chest_white",
-            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.CHESTPLATE, new Item.Properties(), "standard_level_1_chest_white.png"));
+            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.CHESTPLATE, new Item.Properties(), "standard_level_1_chest_white.png", 1));
 
-    // NEW: Leggings
+    // Leggings
     public static final RegistryObject<Item> STANDARD_LEVEL_1_LEGGINGS = ITEMS.register("standard_level_1_leggings",
-            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.LEGGINGS, new Item.Properties(), "standard_level_1_legging.png"));
+            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.LEGGINGS, new Item.Properties(), "standard_level_1_legging.png", 1));
+
+    // --- LEVEL 2 ARMOR (Tier 2) ---
+    
+    // NEW: Engineering Level 2 Helmet (Passes '2' for Radar Logic)
+    
+    // NEW: Engineering Level 2 Helmet
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_HELMET = ITEMS.register("engineering_level_2_helmet", () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.HELMET, new Item.Properties(), "engineering_level_2_helmet.png", 2));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

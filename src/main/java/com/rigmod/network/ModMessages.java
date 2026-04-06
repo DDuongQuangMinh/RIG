@@ -1,6 +1,7 @@
 package com.rigmod.network;
 
 import com.rigmod.RigMod;
+import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.network.packet.CycleVisionModePacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkDirection;
@@ -27,6 +28,13 @@ public class ModMessages {
                 .decoder(CycleVisionModePacket::new)
                 .encoder(CycleVisionModePacket::toBytes)
                 .consumerMainThread(CycleVisionModePacket::handle)
+                .add();
+
+        // ✅ NEW: Your Radar Packet
+        net.messageBuilder(CycleRadarModePacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(CycleRadarModePacket::new)
+                .encoder(CycleRadarModePacket::toBytes)
+                .consumerMainThread(CycleRadarModePacket::handle)
                 .add();
     }
 
