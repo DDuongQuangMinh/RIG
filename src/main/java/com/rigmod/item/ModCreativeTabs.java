@@ -30,6 +30,9 @@ public class ModCreativeTabs {
 
                 // Add the new Engineering Level 2 Helmet to the tab
                 output.accept(ModItems.ENGINEERING_LEVEL_2_HELMET.get());
+
+                // Add the new Level 2 Chestplate to the tab
+                output.accept(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get());
             })
             .build());
 

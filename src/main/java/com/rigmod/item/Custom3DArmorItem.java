@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.rigmod.RigMod;
 import com.rigmod.client.Level2HelmetModel;
+import com.rigmod.client.Level2ChestplateModel; // NEW IMPORT
 import com.rigmod.client.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
@@ -96,7 +97,6 @@ public class Custom3DArmorItem extends ArmorItem {
             CompoundTag tag = stack.getOrCreateTag();
             int visionMode = tag.getInt("VisionMode");
 
-            // LEVEL 1 HELMET 
             if (this.armorLevel == 1) {
                 if (visionMode == 1 || visionMode == 2) {
                     MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
@@ -117,13 +117,8 @@ public class Custom3DArmorItem extends ArmorItem {
                     player.removeEffect(MobEffects.NIGHT_VISION);
                 }
             } 
-            
-            // LEVEL 2 HELMET
             else if (this.armorLevel == 2) {
-                // 1. Permanently banish Night Vision
                 player.removeEffect(MobEffects.NIGHT_VISION);
-
-                // 2. Thermal Vision ON
                 if (visionMode > 0) {
                     AABB box = player.getBoundingBox().inflate(40.0D);
                     List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
@@ -135,10 +130,8 @@ public class Custom3DArmorItem extends ArmorItem {
                     }
                 }
 
-                // 3. RESTORED: Action Bar Radar Messages!
                 int radarMode = tag.getInt("RadarMode");
                 if (radarMode > 0 && player.tickCount % 20 == 0) {
-                    // Match the visual scan range
                     AABB radarBox = player.getBoundingBox().inflate(200.0D); 
                     int entityCount = 0;
                     int playerCount = 0;
@@ -152,7 +145,6 @@ public class Custom3DArmorItem extends ArmorItem {
                         playerCount = players.size();
                     }
 
-                    // §a colors the text Minecraft Green to match your HUD
                     String radarMsg = "§a[RADAR] ";
                     if (radarMode == 1) radarMsg += "Scanning Mobs (" + entityCount + " detected)";
                     else if (radarMode == 2) radarMsg += "Scanning Players (" + playerCount + " detected)";
@@ -163,7 +155,6 @@ public class Custom3DArmorItem extends ArmorItem {
             }
         }
 
-        // --- CHESTPLATE LOGIC ---
         if (this.getType() == Type.CHESTPLATE) {
             if (player.tickCount % 40 == 0) {
                 if (player.getHealth() < player.getMaxHealth()) {
@@ -173,7 +164,6 @@ public class Custom3DArmorItem extends ArmorItem {
         }
     }
 
-    // --- MODEL ---
     @Override
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
@@ -190,11 +180,20 @@ public class Custom3DArmorItem extends ArmorItem {
                         return customModel1;
                     }
                 }
+                
+                // UPDATED CHESTPLATE MODEL SELECTION
                 if (armorSlot == EquipmentSlot.CHEST) {
-                    StandardLevel1ChestModel<?> customModel = new StandardLevel1ChestModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
-                    customModel.young = _default.young; customModel.crouching = _default.crouching; customModel.riding = _default.riding; customModel.rightArmPose = _default.rightArmPose; customModel.leftArmPose = _default.leftArmPose;
-                    return customModel;
+                    if (Custom3DArmorItem.this.armorLevel == 2) {
+                        Level2ChestplateModel<?> customModel2 = new Level2ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2ChestplateModel.LAYER_LOCATION));
+                        customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
+                        return customModel2;
+                    } else {
+                        StandardLevel1ChestModel<?> customModel1 = new StandardLevel1ChestModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
+                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
+                        return customModel1;
+                    }
                 }
+
                 if (armorSlot == EquipmentSlot.LEGS) {
                     StandardLevel1LeggingsModel<?> customModel = new StandardLevel1LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
                     customModel.young = _default.young; customModel.crouching = _default.crouching; customModel.riding = _default.riding; customModel.rightArmPose = _default.rightArmPose; customModel.leftArmPose = _default.leftArmPose;

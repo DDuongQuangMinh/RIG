@@ -2,9 +2,12 @@
   "item.rigmod.titanium_ingot": "Titanium Ingot",
   "item.rigmod.standard_level_1_helmet": "Helmet Level 1",
   "item.rigmod.engineering_level_2_helmet": "Helmet Level 2",
-  "item.rigmod.standard_level_1_chest_white": "Chestplate Level 1(white)",
-  "item.rigmod.standard_level_1_chest_bronze": "Chestplate Level 1(bronze)",
+  "item.rigmod.standard_level_1_chest_white": "Chestplate Level 1 (White)",
+  "item.rigmod.standard_level_1_chest_bronze": "Chestplate Level 1 (Bronze)",
+  "item.rigmod.engineering_level_2_chestplate": "Engineering Chestplate Level 2",
   "item.rigmod.standard_level_1_leggings": "Leggings Level 1",
-  "creativetab.rig_tab": "RIG",
-  "key.rigmod.cycle_vision": "Cycle Vision Mode"
+  "creativetab.rig_tab": "RIG Suit Tech",
+  "key.category.rigmod": "RIG Mod Controls",
+  "key.rigmod.cycle_vision": "Toggle RIG Visor",
+  "key.rigmod.cycle_radar": "Cycle Radar Mode" 
 }

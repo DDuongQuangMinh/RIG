@@ -35,10 +35,13 @@ public class ModItems {
 
     // --- LEVEL 2 ARMOR (Tier 2) ---
     
-    // NEW: Engineering Level 2 Helmet (Passes '2' for Radar Logic)
-    
-    // NEW: Engineering Level 2 Helmet
-    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_HELMET = ITEMS.register("engineering_level_2_helmet", () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.HELMET, new Item.Properties(), "engineering_level_2_helmet.png", 2));
+    // FIXED: Engineering Level 2 Helmet now uses LEVEL_2_ENGINEERING and is fire resistant!
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_HELMET = ITEMS.register("engineering_level_2_helmet", 
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.HELMET, new Item.Properties().fireResistant(), "engineering_level_2_helmet.png", 2));
+
+    // NEW: Level 2 Chestplate
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_CHESTPLATE = ITEMS.register("engineering_level_2_chestplate", 
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant(), "engineering_level_2_chestplate.png", 2));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
