@@ -1,5 +1,6 @@
 package com.rigmod.network.packet;
 
+import com.rigmod.item.Custom3DArmorItem;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -22,13 +23,17 @@ public class CycleRadarModePacket {
             if (player != null) {
                 ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
                 
-                if (!helmet.isEmpty()) {
-                    int currentMode = helmet.getOrCreateTag().getInt("RadarMode");
+                // Verify it's our armor AND that it is specifically Level 2
+                if (!helmet.isEmpty() && helmet.getItem() instanceof Custom3DArmorItem armor) {
                     
-                    // Cycle from 0 -> 1 -> 2 -> 3 -> 0
-                    int nextMode = (currentMode + 1) % 4; 
-                    
-                    helmet.getOrCreateTag().putInt("RadarMode", nextMode);
+                    if (armor.getArmorLevel() == 2) {
+                        int currentMode = helmet.getOrCreateTag().getInt("RadarMode");
+                        
+                        // Cycle from 0 -> 1 -> 2 -> 3 -> 0
+                        int nextMode = (currentMode + 1) % 4; 
+                        
+                        helmet.getOrCreateTag().putInt("RadarMode", nextMode);
+                    }
                 }
             }
         });

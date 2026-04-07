@@ -5,13 +5,19 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 
 import java.util.function.Supplier;
 
 public enum ModArmorMaterials implements ArmorMaterial {
-    // We removed the confusing number arrays from this line
-    STANDARD_LEVEL_1("standard_level_1", 15, 9, SoundEvents.ARMOR_EQUIP_IRON, 0.0F, 0.0F, () -> Ingredient.of(ModItems.TITANIUM_INGOT.get()));
+    // LEVEL 1: Iron-ish stats
+    STANDARD_LEVEL_1("standard_level_1", 15, 9, SoundEvents.ARMOR_EQUIP_IRON, 0.0F, 0.0F, 
+            new int[]{2, 5, 6, 2}, () -> Ingredient.of(ModItems.TITANIUM_INGOT.get())),
+
+    // LEVEL 2: Exact Netherite stats (Durability 37, Toughness 3.0, Knockback Res 0.1)
+    LEVEL_2_ENGINEERING("level_2_helmet", 37, 15, SoundEvents.ARMOR_EQUIP_NETHERITE, 3.0F, 0.1F, 
+            new int[]{3, 6, 8, 3}, () -> Ingredient.of(Items.NETHERITE_INGOT));
 
     private final String name;
     private final int durabilityMultiplier;
@@ -19,41 +25,37 @@ public enum ModArmorMaterials implements ArmorMaterial {
     private final SoundEvent equipSound;
     private final float toughness;
     private final float knockbackResistance;
+    private final int[] protectionAmounts; // Added to store defense per piece
     private final Supplier<Ingredient> repairIngredient;
 
-    ModArmorMaterials(String name, int durabilityMultiplier, int enchantability, SoundEvent equipSound, float toughness, float knockbackResistance, Supplier<Ingredient> repairIngredient) {
+    ModArmorMaterials(String name, int durabilityMultiplier, int enchantability, SoundEvent equipSound, 
+                      float toughness, float knockbackResistance, int[] protectionAmounts, Supplier<Ingredient> repairIngredient) {
         this.name = name;
         this.durabilityMultiplier = durabilityMultiplier;
         this.enchantability = enchantability;
         this.equipSound = equipSound;
         this.toughness = toughness;
         this.knockbackResistance = knockbackResistance;
+        this.protectionAmounts = protectionAmounts;
         this.repairIngredient = repairIngredient;
     }
 
-    // FIXED: Explicitly define the base durability for every armor piece
     @Override
     public int getDurabilityForType(ArmorItem.Type type) {
-        int baseDurability = 0;
-        switch (type) {
-            case HELMET: baseDurability = 11; break;
-            case CHESTPLATE: baseDurability = 16; break;
-            case LEGGINGS: baseDurability = 15; break;
-            case BOOTS: baseDurability = 13; break;
-        }
+        // Standard Minecraft base durability values
+        int baseDurability = switch (type) {
+            case HELMET -> 11;
+            case CHESTPLATE -> 16;
+            case LEGGINGS -> 15;
+            case BOOTS -> 13;
+        };
         return baseDurability * this.durabilityMultiplier;
     }
 
-    // FIXED: Explicitly define the defense points for every armor piece
     @Override
     public int getDefenseForType(ArmorItem.Type type) {
-        switch (type) {
-            case HELMET: return 2;
-            case CHESTPLATE: return 6; // Your RIG suit now correctly gets 6 armor points!
-            case LEGGINGS: return 5;
-            case BOOTS: return 2;
-            default: return 0;
-        }
+        // Pulls the defense from the array we defined in the enum constants above
+        return this.protectionAmounts[type.getSlot().getIndex()];
     }
 
     @Override

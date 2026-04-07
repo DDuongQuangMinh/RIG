@@ -1,10 +1,11 @@
 package com.rigmod;
 
 import com.mojang.logging.LogUtils;
-import com.rigmod.client.Level2HelmetModel; // Make sure this is imported!
+import com.rigmod.client.Level2HelmetModel; 
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
 import com.rigmod.client.VisionOverlay;
+import com.rigmod.client.RadarOverlay; // ✅ NEW: Import your radar overlay!
 import com.rigmod.client.KeyBindings;
 import com.rigmod.client.StandardLevel1ChestModel;
 import com.rigmod.item.Custom3DArmorItem;
@@ -12,7 +13,7 @@ import com.rigmod.item.ModItems;
 import com.rigmod.item.ModCreativeTabs;
 import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CycleVisionModePacket;
-import com.rigmod.network.packet.CycleRadarModePacket; // NEW: Import the radar packet
+import com.rigmod.network.packet.CycleRadarModePacket; 
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -89,12 +90,13 @@ public class RigMod
         @SubscribeEvent
         public static void registerOverlays(RegisterGuiOverlaysEvent event) {
             event.registerAboveAll("vision_overlay", VisionOverlay.HUD_VISION);
+            event.registerAboveAll("radar_overlay", RadarOverlay.HUD_RADAR); // ✅ NEW: Register the Radar GUI
         }
 
         @SubscribeEvent
         public static void onKeyRegister(RegisterKeyMappingsEvent event) {
             event.register(KeyBindings.CYCLE_VISION_KEY);
-            event.register(KeyBindings.CYCLE_RADAR_KEY); // NEW: Registers the 'R' key
+            event.register(KeyBindings.CYCLE_RADAR_KEY); 
         }
     }
 
@@ -103,11 +105,9 @@ public class RigMod
         
         @SubscribeEvent
         public static void onClientTick(TickEvent.ClientTickEvent event) {
-            // Listens for 'V'
             while (KeyBindings.CYCLE_VISION_KEY.consumeClick()) {
                 ModMessages.sendToServer(new CycleVisionModePacket());
             }
-            // NEW: Listens for 'R'
             while (KeyBindings.CYCLE_RADAR_KEY.consumeClick()) {
                 ModMessages.sendToServer(new CycleRadarModePacket());
             }

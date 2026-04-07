@@ -21,7 +21,7 @@ public class Level2HelmetModel<T extends LivingEntity> extends HumanoidModel<T> 
         MeshDefinition meshdefinition = new MeshDefinition();
         PartDefinition partdefinition = meshdefinition.getRoot();
 
-        // Empty vanilla parts to prevent visual conflicts
+        // Empty vanilla parts
         partdefinition.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.ZERO);
@@ -29,13 +29,13 @@ public class Level2HelmetModel<T extends LivingEntity> extends HumanoidModel<T> 
         partdefinition.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.ZERO);
 
-        // Vanilla Head Anchor
         PartDefinition head = partdefinition.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.ZERO);
 
-        // We attach your Blockbench Helmet directly to the vanilla head bone
+        // THE FIX: Changed Y-offset from 24.0F to 16.0F to raise it to the head.
+        // Also added a 180-degree (Math.PI) Y-rotation so the visor faces forward!
         PartDefinition Helmet = head.addOrReplaceChild("Helmet", CubeListBuilder.create()
                 .texOffs(0, 0).addBox(-4.0F, -24.0F, -4.0F, 8.0F, 8.0F, 8.0F, new CubeDeformation(0.0F)), 
-                PartPose.offset(0.0F, 24.0F, 0.0F));
+                PartPose.offsetAndRotation(0.0F, 16.0F, 0.0F, 0.0F, (float) Math.PI, 0.0F));
 
         PartDefinition Front = Helmet.addOrReplaceChild("Front", CubeListBuilder.create()
                 .texOffs(0, 25).addBox(-4.0F, -4.0F, 4.0F, 8.0F, 4.0F, 1.0F, new CubeDeformation(0.0F))
