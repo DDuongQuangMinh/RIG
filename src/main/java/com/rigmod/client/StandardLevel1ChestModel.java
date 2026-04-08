@@ -1,5 +1,7 @@
 package com.rigmod.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.rigmod.RigMod;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
@@ -12,73 +14,132 @@ import net.minecraft.world.entity.LivingEntity;
 public class StandardLevel1ChestModel<T extends LivingEntity> extends HumanoidModel<T> {
     
     public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(new ResourceLocation(RigMod.MODID, "standard_level_1_chest"), "main");
-    
-    private final ModelPart lifeSupport;
-    public final ModelPart rightArm; // 1. ADDED THIS LINE
 
     public StandardLevel1ChestModel(ModelPart root) {
         super(root);
-        this.lifeSupport = root.getChild("body").getChild("lifeSupport");
-        this.rightArm = root.getChild("right_arm"); // 2. ADDED THIS LINE
     }
 
     public static LayerDefinition createBodyLayer() {
         MeshDefinition meshdefinition = new MeshDefinition();
         PartDefinition partdefinition = meshdefinition.getRoot();
 
-        // 1. STANDARD PARTS (Head, Hat, Legs, Left Arm stay empty so they don't overwrite vanilla armor)
         partdefinition.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.ZERO);
-        partdefinition.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.ZERO);
 
-        // 2. RIGHT ARM (We attach the "tablet" here so it animates with the arm!)
-        PartDefinition rightArm = partdefinition.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.offset(-5.0F, 2.0F, 0.0F));
+        // TARGETED INFLATION RULES
+        CubeDeformation armorInflation = new CubeDeformation(0.25F); 
+        CubeDeformation gauntletInflation = new CubeDeformation(0.25F, 0.0F, 0.25F);
+        
+        // PERFECT TABLET FIX: 0 Width/Height inflation (so it stays sleek), but 0.3 Depth inflation (so it gets thick)
+        CubeDeformation tabletBaseInflation = new CubeDeformation(0.0F, 0.0F, 0.3F);
+        CubeDeformation noInflation = new CubeDeformation(0.0F);
 
-        rightArm.addOrReplaceChild("tablet", CubeListBuilder.create()
-                .texOffs(0, 0).addBox(-3.25F, 0.0F, -2.0F, 1.0F, 4.0F, 4.0F, new CubeDeformation(0.0F))
-                .texOffs(0, 8).addBox(-3.0F, 0.0F, -2.25F, 4.0F, 4.0F, 1.0F, new CubeDeformation(0.0F))
-                .texOffs(10, 0).addBox(-3.0F, 0.0F, 1.25F, 4.0F, 4.0F, 1.0F, new CubeDeformation(0.0F)), 
-                // FIXED: Decreased from 6.0F to 4.0F to pull it exactly 2 pixels higher
-                PartPose.offset(0.0F, 4.0F, 0.0F));
-
-        // 3. BODY (Spine and Health Bar stay here so they follow the torso)
+        // ==========================================
+        // TORSO & BELT
+        // ==========================================
         PartDefinition body = partdefinition.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.ZERO);
 
-        // FIXED: Changed to 17.0F to pull the top of the RIG away from the neck
-        PartDefinition lifeSupport = body.addOrReplaceChild("lifeSupport", CubeListBuilder.create(), PartPose.offset(0.0F, 17.0F, 0.0F));
+        body.addOrReplaceChild("torso", CubeListBuilder.create()
+            .texOffs(0, 0).addBox(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F, armorInflation), PartPose.ZERO);
 
-        PartDefinition healthBar = lifeSupport.addOrReplaceChild("healthBar", CubeListBuilder.create(), PartPose.offset(0.0F, 0.0F, 0.0F));
-        healthBar.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(6, 17).addBox(-1.0F, -2.0F, -1.0F, 1.0F, 3.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-1.8558F, -14.5795F, 1.25F, 0.0F, 0.0F, 0.2182F));
-        healthBar.addOrReplaceChild("cube_r2", CubeListBuilder.create().texOffs(0, 17).addBox(0.0F, -2.0F, -1.0F, 1.0F, 3.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(1.8558F, -14.6295F, 1.25F, 0.0F, 0.0F, -0.2182F));
-        healthBar.addOrReplaceChild("cube_r3", CubeListBuilder.create().texOffs(16, 9).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 2.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.8558F, -13.6295F, 1.25F, 0.0F, 0.0F, -0.2182F));
-        healthBar.addOrReplaceChild("cube_r4", CubeListBuilder.create().texOffs(16, 5).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 2.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-0.8558F, -13.5795F, 1.25F, 0.0F, 0.0F, 0.2182F));
-        healthBar.addOrReplaceChild("cube_r5", CubeListBuilder.create().texOffs(8, 13).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 2.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.5F, -12.05F, 1.25F, 0.0F, 0.0F, 0.1745F));
-        healthBar.addOrReplaceChild("cube_r6", CubeListBuilder.create().texOffs(0, 13).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 2.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-0.5F, -12.0F, 1.25F, 0.0F, 0.0F, -0.1745F));
-        healthBar.addOrReplaceChild("cube_r7", CubeListBuilder.create().texOffs(12, 17).addBox(0.0F, -8.0F, -1.0F, 1.0F, 2.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-0.5F, -11.0F, 4.75F, 0.1745F, 0.0F, 0.0F));
-        healthBar.addOrReplaceChild("cube_r8", CubeListBuilder.create().texOffs(16, 13).addBox(0.0F, -6.0F, -1.0F, 1.0F, 6.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-0.5F, -10.9602F, 2.9249F, -0.1309F, 0.0F, 0.0F));
-        healthBar.addOrReplaceChild("cube_r9", CubeListBuilder.create().texOffs(20, 13).addBox(-1.0F, -3.0F, -1.0F, 2.0F, 3.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, -17.0F, 3.0F, 0.2618F, 0.0F, 0.0F));
-        healthBar.addOrReplaceChild("cube_r10", CubeListBuilder.create().texOffs(10, 5).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 7.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, -14.25F, 2.75F, -0.0873F, 0.0F, 0.0F));
-        healthBar.addOrReplaceChild("cube_r11", CubeListBuilder.create().texOffs(4, 22).addBox(0.0F, -1.0F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-1.75F, -14.0F, 1.5F, 0.0F, 0.0F, -0.7854F));
+        PartDefinition chest_tablet = body.addOrReplaceChild("chest_tablet", CubeListBuilder.create()
+            .texOffs(36, 10).addBox(-1.0F, 3.0F, -2.25F, 2.0F, 2.0F, 1.0F, tabletBaseInflation), PartPose.ZERO);
 
-        PartDefinition spine = lifeSupport.addOrReplaceChild("spine", CubeListBuilder.create(), PartPose.offset(0.0F, 0.0F, 0.0F));
-        spine.addOrReplaceChild("cube_r12", CubeListBuilder.create().texOffs(20, 25).addBox(0.0F, -1.0F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(16, 25).addBox(0.0F, 0.25F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(24, 23).addBox(0.0F, 1.5F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(1.6164F, -8.1F, 1.0251F, 0.0F, -0.1745F, 0.0F));
-        spine.addOrReplaceChild("cube_r13", CubeListBuilder.create().texOffs(24, 21).addBox(0.0F, -1.0F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(12, 24).addBox(0.0F, 0.25F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(24, 10).addBox(0.0F, 1.5F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-2.6249F, -8.1F, 1.1651F, 0.0F, 0.1745F, 0.0F));
-        spine.addOrReplaceChild("cube_r14", CubeListBuilder.create().texOffs(8, 24).addBox(0.0F, -1.0F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(24, 6).addBox(0.0F, -2.25F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(24, 4).addBox(0.0F, -3.5F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.25F, -5.6F, 1.25F, 0.0F, 0.2182F, 0.0F));
-        spine.addOrReplaceChild("cube_r15", CubeListBuilder.create().texOffs(24, 8).addBox(0.0F, -1.0F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(4, 24).addBox(0.0F, -2.25F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)).texOffs(8, 22).addBox(0.0F, -3.5F, 0.0F, 1.0F, 1.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-1.25F, -5.6F, 1.0F, 0.0F, -0.2182F, 0.0F));
-        spine.addOrReplaceChild("cube_r16", CubeListBuilder.create().texOffs(0, 22).addBox(0.0F, -2.0F, -1.0F, 1.0F, 4.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-0.5F, -7.5F, 2.5F, 0.0873F, 0.0F, 0.0F));
+        // SCREEN FIX: Pushes the glowing screens forward perfectly to match the 0.3 thickness of the base!
+        PartDefinition tablet_screens = chest_tablet.addOrReplaceChild("tablet_screens", CubeListBuilder.create(), PartPose.offset(0.0F, 0.0F, -0.3F));
 
-        PartDefinition chestTablet = lifeSupport.addOrReplaceChild("chestTablet", CubeListBuilder.create().texOffs(20, 17).addBox(-1.0F, -16.0F, -2.25F, 2.0F, 3.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offset(0.0F, 0.0F, 0.0F));
-        chestTablet.addOrReplaceChild("cube_r17", CubeListBuilder.create().texOffs(12, 20).addBox(-1.0F, -2.0F, 0.0F, 2.0F, 3.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(1.9063F, -14.1049F, -2.5732F, 0.8777F, -0.2895F, -0.3311F));
-        chestTablet.addOrReplaceChild("cube_r18", CubeListBuilder.create().texOffs(20, 0).addBox(-1.0F, -2.0F, 0.0F, 2.0F, 3.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-1.9063F, -14.1049F, -2.5732F, 0.8777F, 0.2895F, 0.3311F));
-        chestTablet.addOrReplaceChild("cube_r19", CubeListBuilder.create().texOffs(18, 21).addBox(-1.0F, -2.0F, 0.0F, 2.0F, 3.0F, 1.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, -13.7934F, -2.8588F, 0.829F, 0.0F, 0.0F));
+        tablet_screens.addOrReplaceChild("cube_r1", CubeListBuilder.create()
+            .texOffs(34, 39).addBox(-1.0F, -3.0F, -1.0F, 2.0F, 3.0F, 0.0F, noInflation), 
+            PartPose.offsetAndRotation(1.5977F, 4.6685F, -1.0129F, 0.3695F, -0.3272F, -0.1238F));
 
-        return LayerDefinition.create(meshdefinition, 32, 32);
-    }
+        tablet_screens.addOrReplaceChild("cube_r2", CubeListBuilder.create()
+            .texOffs(30, 39).addBox(-1.0F, -3.0F, -1.0F, 2.0F, 3.0F, 0.0F, noInflation), 
+            PartPose.offsetAndRotation(-1.5977F, 4.6685F, -1.0129F, 0.3695F, 0.3272F, 0.1238F));
 
-    @Override
-    public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
-        super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+        tablet_screens.addOrReplaceChild("cube_r3", CubeListBuilder.create()
+            .texOffs(26, 39).addBox(-1.0F, -3.0F, -1.0F, 2.0F, 3.0F, 0.0F, noInflation), 
+            PartPose.offsetAndRotation(0.0F, 4.7414F, -1.285F, 0.3491F, 0.0F, 0.0F));
+
+        // ==========================================
+        // BACKPACK
+        // ==========================================
+        PartDefinition Back = body.addOrReplaceChild("Back", CubeListBuilder.create(), PartPose.ZERO);
+
+        Back.addOrReplaceChild("cube_r4", CubeListBuilder.create()
+            .texOffs(16, 39).addBox(0.0F, -3.0F, 0.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(-3.7F, 4.0F, 1.1F, 0.0F, 0.0F, 0.2182F));
+        Back.addOrReplaceChild("cube_r5", CubeListBuilder.create()
+            .texOffs(12, 39).addBox(-1.0F, -2.0F, 0.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(3.4F, 3.0F, 1.1F, 0.0F, 0.0F, -0.2182F));
+        Back.addOrReplaceChild("cube_r6", CubeListBuilder.create()
+            .texOffs(8, 39).addBox(-1.0F, -3.0F, 0.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(-1.9576F, 6.639F, 1.1F, 0.0F, 0.0F, -0.2618F));
+        Back.addOrReplaceChild("cube_r7", CubeListBuilder.create()
+            .texOffs(4, 39).addBox(0.0F, -3.0F, 0.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(1.8741F, 6.6153F, 1.1F, 0.0F, 0.0F, 0.2618F));
+        Back.addOrReplaceChild("cube_r8", CubeListBuilder.create()
+            .texOffs(38, 32).addBox(-1.0F, -3.0F, -1.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(-1.0F, 3.7114F, 2.6615F, 0.1355F, -0.2595F, -0.035F));
+        Back.addOrReplaceChild("cube_r9", CubeListBuilder.create()
+            .texOffs(38, 28).addBox(-1.0F, -3.0F, -1.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(1.9659F, 3.7452F, 2.4049F, 0.1355F, 0.2595F, 0.035F));
+        Back.addOrReplaceChild("cube_r10", CubeListBuilder.create()
+            .texOffs(20, 36).addBox(-1.0F, -3.0F, -1.0F, 2.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(0.0F, 3.7114F, 2.6615F, 0.1309F, 0.0F, 0.0F));
+        Back.addOrReplaceChild("cube_r11", CubeListBuilder.create()
+            .texOffs(24, 13).addBox(-1.0F, -3.0F, -1.0F, 2.0F, 2.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(0.0F, 9.7F, 2.15F, -0.0873F, 0.0F, 0.0F));
+        Back.addOrReplaceChild("cube_r12", CubeListBuilder.create()
+            .texOffs(36, 6).addBox(-1.0F, -3.0F, -1.0F, 2.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(0.0F, 6.7F, 2.4F, -0.0873F, 0.0F, 0.0F));
+
+        PartDefinition spine = Back.addOrReplaceChild("spine", CubeListBuilder.create()
+            .texOffs(0, 39).addBox(-0.5F, 8.6886F, 1.4385F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.ZERO);
+
+        spine.addOrReplaceChild("cube_r13", CubeListBuilder.create()
+            .texOffs(40, 13).addBox(0.0F, -4.0F, 0.0F, 1.0F, 1.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(0.7F, 6.3886F, 1.6385F, 0.0436F, -0.2182F, -0.7854F));
+        spine.addOrReplaceChild("cube_r14", CubeListBuilder.create()
+            .texOffs(38, 20).addBox(0.0F, -3.0F, -1.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(-0.5F, 9.6886F, 2.4385F, -0.0873F, 0.0F, 0.0F));
+        spine.addOrReplaceChild("cube_r15", CubeListBuilder.create()
+            .texOffs(38, 36).addBox(0.0F, -3.0F, -1.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(-0.5F, 3.7114F, 2.9615F, 0.1745F, 0.0F, 0.0F));
+        spine.addOrReplaceChild("cube_r16", CubeListBuilder.create()
+            .texOffs(38, 24).addBox(0.0F, -3.0F, -1.0F, 1.0F, 3.0F, 1.0F, armorInflation), PartPose.offsetAndRotation(-0.5F, 6.7F, 2.7F, -0.0873F, 0.0F, 0.0F));
+
+        body.addOrReplaceChild("belt", CubeListBuilder.create()
+            .texOffs(24, 0).addBox(-4.0F, 10.0F, -2.2F, 8.0F, 2.0F, 1.0F, armorInflation)
+            .texOffs(24, 3).addBox(-4.0F, 10.0F, 1.2F, 8.0F, 2.0F, 1.0F, armorInflation)
+            .texOffs(26, 36).addBox(-3.0F, 9.9F, -2.4F, 2.0F, 2.0F, 1.0F, armorInflation)
+            .texOffs(32, 36).addBox(1.0F, 9.9F, -2.4F, 2.0F, 2.0F, 1.0F, armorInflation), PartPose.ZERO);
+
+        // ==========================================
+        // RIGHT ARM 
+        // ==========================================
+        PartDefinition right_arm = partdefinition.addOrReplaceChild("right_arm", CubeListBuilder.create()
+            .texOffs(0, 16).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, armorInflation), PartPose.offset(-5.0F, 2.0F, 0.0F));
+
+        PartDefinition right_armor = right_arm.addOrReplaceChild("right_armor", CubeListBuilder.create()
+            .texOffs(12, 32).addBox(-3.2F, 2.6F, -1.5F, 1.0F, 4.0F, 3.0F, armorInflation), PartPose.ZERO);
+
+        right_armor.addOrReplaceChild("cube_r17", CubeListBuilder.create()
+            .texOffs(32, 20).addBox(-1.0F, -2.0F, -2.0F, 2.0F, 3.0F, 1.0F, armorInflation)
+            .texOffs(20, 32).addBox(-1.0F, -2.0F, -5.4F, 2.0F, 3.0F, 1.0F, armorInflation)
+            .texOffs(24, 6).addBox(-1.0F, -2.0F, -5.2F, 2.0F, 3.0F, 4.0F, armorInflation), 
+            PartPose.offsetAndRotation(-2.3F, -0.2F, 3.2F, 0.0F, 0.0F, 0.0873F));
+
+        right_arm.addOrReplaceChild("right_palm_armor", CubeListBuilder.create()
+            .texOffs(32, 28).addBox(-3.2F, 7.3F, -1.0F, 1.0F, 2.0F, 2.0F, gauntletInflation), PartPose.ZERO);
+
+        // ==========================================
+        // LEFT ARM 
+        // ==========================================
+        PartDefinition left_arm = partdefinition.addOrReplaceChild("left_arm", CubeListBuilder.create()
+            .texOffs(16, 16).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 12.0F, 4.0F, armorInflation), PartPose.offset(5.0F, 2.0F, 0.0F));
+
+        PartDefinition left_armor = left_arm.addOrReplaceChild("left_armor", CubeListBuilder.create()
+            .texOffs(32, 13).addBox(2.2F, 2.6F, -1.5F, 1.0F, 4.0F, 3.0F, armorInflation), PartPose.ZERO);
+
+        left_armor.addOrReplaceChild("cube_r18", CubeListBuilder.create()
+            .texOffs(0, 32).addBox(-1.0F, -2.0F, -2.0F, 2.0F, 3.0F, 4.0F, armorInflation)
+            .texOffs(32, 24).addBox(-1.0F, -2.0F, -2.2F, 2.0F, 3.0F, 1.0F, armorInflation)
+            .texOffs(26, 32).addBox(-1.0F, -2.0F, 1.2F, 2.0F, 3.0F, 1.0F, armorInflation), 
+            PartPose.offsetAndRotation(2.3F, -0.2F, 0.0F, 0.0F, 0.0F, -0.0873F));
+
+        left_arm.addOrReplaceChild("left_palm_armor", CubeListBuilder.create()
+            .texOffs(32, 32).addBox(2.2F, 7.3F, -1.0F, 1.0F, 2.0F, 2.0F, gauntletInflation), PartPose.ZERO);
+
+        return LayerDefinition.create(meshdefinition, 64, 64);
     }
 }
