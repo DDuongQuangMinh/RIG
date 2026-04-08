@@ -2,19 +2,23 @@ package com.rigmod;
 
 import com.mojang.logging.LogUtils;
 import com.rigmod.client.Level2HelmetModel; 
-import com.rigmod.client.Level2ChestplateModel; // NEW: Imports your Level 2 Chestplate
+import com.rigmod.client.Level2ChestplateModel; 
 import com.rigmod.client.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
 import com.rigmod.client.VisionOverlay;
 import com.rigmod.client.RadarOverlay; 
 import com.rigmod.client.KeyBindings;
+import com.rigmod.client.RigWorkbenchModel; // NEW: Workbench Model
+import com.rigmod.client.RigWorkbenchRenderer; // NEW: Workbench Renderer
 import com.rigmod.item.Custom3DArmorItem;
 import com.rigmod.item.ModItems;
 import com.rigmod.item.ModCreativeTabs;
 import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CycleVisionModePacket;
-import com.rigmod.network.packet.CycleRadarModePacket; 
+import com.rigmod.network.packet.CycleRadarModePacket;
+import com.rigmod.block.ModBlocks;
+import com.rigmod.blockentity.ModBlockEntities; // NEW: Block Entities
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -52,7 +56,9 @@ public class RigMod
     public RigMod() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         
-        ModItems.register(modEventBus); 
+        ModItems.register(modEventBus);
+        ModBlocks.register(modEventBus);
+        ModBlockEntities.register(modEventBus); // NEW: Registers the Workbench Brains
         ModCreativeTabs.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
@@ -87,9 +93,16 @@ public class RigMod
             event.registerLayerDefinition(StandardLevel1ChestModel.LAYER_LOCATION, StandardLevel1ChestModel::createBodyLayer);
             event.registerLayerDefinition(StandardLevel1LeggingsModel.LAYER_LOCATION, StandardLevel1LeggingsModel::createBodyLayer);
             event.registerLayerDefinition(Level2HelmetModel.LAYER_LOCATION, Level2HelmetModel::createBodyLayer);
-            
-            // Registers the Level 2 Chestplate so it can be drawn on the arm
             event.registerLayerDefinition(Level2ChestplateModel.LAYER_LOCATION, Level2ChestplateModel::createBodyLayer);
+            
+            // NEW: Registers the 3D Workbench Model Layer
+            event.registerLayerDefinition(RigWorkbenchModel.LAYER_LOCATION, RigWorkbenchModel::createBodyLayer);
+        }
+
+        // NEW: Links your Custom Renderer to your Block Entity
+        @SubscribeEvent
+        public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+            event.registerBlockEntityRenderer(ModBlockEntities.RIG_WORKBENCH_BE.get(), RigWorkbenchRenderer::new);
         }
 
         @SubscribeEvent
@@ -118,7 +131,6 @@ public class RigMod
             }
         }
 
-        // THE FIX: Dynamically load the correct arm model based on armor level!
         @SubscribeEvent
         public static void onRenderArm(RenderArmEvent event) {
             Player player = event.getPlayer();
@@ -135,7 +147,6 @@ public class RigMod
 
                 event.getPoseStack().pushPose();
 
-                // 1. Ask the item what level it is, and fetch the correct model
                 HumanoidModel<?> model;
                 if (armorItem.getArmorLevel() == 2) {
                     model = new Level2ChestplateModel<>(mc.getEntityModels().bakeLayer(Level2ChestplateModel.LAYER_LOCATION));
@@ -143,14 +154,12 @@ public class RigMod
                     model = new StandardLevel1ChestModel<>(mc.getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
                 }
 
-                // 2. Render the Right Arm
                 if (event.getArm() == HumanoidArm.RIGHT) {
                     model.rightArm.xRot = 0.0F;
                     model.rightArm.yRot = 0.0F;
                     model.rightArm.zRot = 0.0F;
                     model.rightArm.render(event.getPoseStack(), vertexConsumer, event.getPackedLight(), OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
                 } 
-                // 3. Render the Left Arm (for dual-wielding / offhand!)
                 else if (event.getArm() == HumanoidArm.LEFT) {
                     model.leftArm.xRot = 0.0F;
                     model.leftArm.yRot = 0.0F;

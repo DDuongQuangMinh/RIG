@@ -3,6 +3,7 @@ package com.rigmod.event;
 import com.rigmod.RigMod;
 import com.rigmod.item.ModItems;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
@@ -23,15 +24,65 @@ public class ArmorFlightHandler {
             boolean isWearingFlightArmor = chestArmor.getItem() == ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get();
 
             // ==========================================
-            // 1. FLIGHT LOGIC (Runs on Server & Client)
+            // 1. FLIGHT & FUEL LOGIC
             // ==========================================
             if (!player.isCreative() && !player.isSpectator()) {
                 if (isWearingFlightArmor) {
-                    if (!player.getAbilities().mayfly) {
+                    
+                    // Access the chestplate's hidden data
+                    CompoundTag tag = chestArmor.getOrCreateTag();
+                    int maxFuel = 1200; // 60 seconds of continuous flight
+                    
+                    // If the armor is brand new, fill the tank!
+                    if (!tag.contains("JetpackFuel")) {
+                        tag.putInt("JetpackFuel", maxFuel);
+                    }
+                    int currentFuel = tag.getInt("JetpackFuel");
+
+                    // ⚙️ IF ACTIVELY FLYING IN THE AIR: Drain Fuel
+                    if (player.getAbilities().flying) {
+                        currentFuel--;
+                        tag.putInt("JetpackFuel", currentFuel);
+
+                        // HUD: Display fuel percentage on the Action Bar
+                        if (currentFuel % 10 == 0 || currentFuel < 60) {
+                            int percent = (int) (((float) currentFuel / maxFuel) * 100);
+                            String color = currentFuel < 240 ? "§c" : "§b"; // Red if under 20%, Cyan otherwise
+                            
+                            // The 'true' at the end makes it appear above the hotbar instead of spamming chat!
+                            player.displayClientMessage(net.minecraft.network.chat.Component.literal(color + "Jetpack Fuel: " + percent + "%"), true);
+                        }
+
+                        // OUT OF FUEL: Instantly drop the player
+                        if (currentFuel <= 0) {
+                            player.getAbilities().mayfly = false;
+                            player.getAbilities().flying = false;
+                            player.onUpdateAbilities();
+                            player.displayClientMessage(net.minecraft.network.chat.Component.literal("§c[WARNING] Jetpack Depleted!"), true);
+                        }
+                    } 
+                    // ⚙️ IF STANDING ON THE GROUND: Recharge Fuel
+                    else if (player.onGround()) {
+                        if (currentFuel < maxFuel) {
+                            currentFuel += 4; // Recharges 4x faster than it drains
+                            if (currentFuel > maxFuel) currentFuel = maxFuel;
+                            tag.putInt("JetpackFuel", currentFuel);
+                            
+                            // Let the player know it is fully charged
+                            if (currentFuel == maxFuel) {
+                                player.displayClientMessage(net.minecraft.network.chat.Component.literal("§aJetpack Fully Charged!"), true);
+                            }
+                        }
+                    }
+
+                    // Always allow them to double-jump to start flying IF they have fuel
+                    if (currentFuel > 0 && !player.getAbilities().mayfly) {
                         player.getAbilities().mayfly = true;
                         player.onUpdateAbilities();
                     }
-                } else {
+                } 
+                else {
+                    // Instantly revoke flight if they take the armor off
                     if (player.getAbilities().mayfly) {
                         player.getAbilities().mayfly = false;
                         player.getAbilities().flying = false;
@@ -46,18 +97,14 @@ public class ArmorFlightHandler {
             if (player.level().isClientSide() && isWearingFlightArmor && player.getAbilities().flying) {
                 RandomSource random = player.getRandom();
                 
-                // Get player's body rotation in radians
                 float bodyYaw = player.yBodyRot * ((float)Math.PI / 180F);
                 
-                // PULLED IN TIGHTER: 0.25 blocks behind player (was 0.4)
                 double backwardX = Math.sin(bodyYaw) * 0.25D;
                 double backwardZ = -Math.cos(bodyYaw) * 0.25D;
                 
-                // Distance apart from each other (left and right)
                 double sideX = Math.cos(bodyYaw) * 0.22D;
                 double sideZ = Math.sin(bodyYaw) * 0.22D;
                 
-                // RAISED TO SHOULDERS: 1.3 is upper back height (was 0.8)
                 double y = player.getY() + 1.3D; 
 
                 // --- LEFT THRUSTER ---

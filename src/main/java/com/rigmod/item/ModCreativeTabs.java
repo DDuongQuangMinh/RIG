@@ -1,6 +1,7 @@
 package com.rigmod.item;
 
 import com.rigmod.RigMod;
+import com.rigmod.block.ModBlocks; // NEW: Import your blocks!
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -19,6 +20,7 @@ public class ModCreativeTabs {
             .title(Component.translatable("creativetab.rig_tab"))
             .displayItems((parameters, output) -> {
                 output.accept(ModItems.TITANIUM_INGOT.get());
+                output.accept(ModItems.RAW_TITANIUM.get());
                 output.accept(ModItems.STANDARD_LEVEL_1_HELMET.get());
                 
                 // Add both variants to the tab
@@ -33,6 +35,9 @@ public class ModCreativeTabs {
 
                 // Add the new Level 2 Chestplate to the tab
                 output.accept(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get());
+
+                // NEW: Add the Workbench to the tab!
+                output.accept(ModBlocks.RIG_WORKBENCH.get());
             })
             .build());
 
