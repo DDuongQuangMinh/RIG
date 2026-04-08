@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.rigmod.RigMod;
 import com.rigmod.client.Level2HelmetModel;
-import com.rigmod.client.Level2ChestplateModel; // NEW IMPORT
+import com.rigmod.client.Level2ChestplateModel; 
 import com.rigmod.client.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
@@ -59,8 +59,11 @@ public class Custom3DArmorItem extends ArmorItem {
                 builder.putAll(super.getDefaultAttributeModifiers(slot));
 
                 if (this.getType() == Type.CHESTPLATE) {
+                    // CHECK ARMOR LEVEL: Level 2 gives 20.0 health (+10 hearts). Level 1 gives 8.0 health (+4 hearts).
+                    double healthBoost = (this.armorLevel == 2) ? 20.0D : 8.0D;
+                    
                     builder.put(Attributes.MAX_HEALTH, new AttributeModifier(
-                            HEALTH_MODIFIER_UUID, "Chestplate health boost", 8.0D, AttributeModifier.Operation.ADDITION));
+                            HEALTH_MODIFIER_UUID, "Chestplate health boost", healthBoost, AttributeModifier.Operation.ADDITION));
                 }
                 if (this.getType() == Type.LEGGINGS) {
                     builder.put(Attributes.MOVEMENT_SPEED, new AttributeModifier(
@@ -181,7 +184,6 @@ public class Custom3DArmorItem extends ArmorItem {
                     }
                 }
                 
-                // UPDATED CHESTPLATE MODEL SELECTION
                 if (armorSlot == EquipmentSlot.CHEST) {
                     if (Custom3DArmorItem.this.armorLevel == 2) {
                         Level2ChestplateModel<?> customModel2 = new Level2ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2ChestplateModel.LAYER_LOCATION));

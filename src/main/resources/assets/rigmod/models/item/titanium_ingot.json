@@ -1,60 +1,6 @@
 {
-    "format_version": "1.9.0",
-    "credit": "Made with Blockbench",
-    "textures": {
-        "0": "rigmod:item/titanium_ingot",
-        "particle": "rigmod:item/titanium_ingot"
-    },
-    "elements": [
-        {
-            "from": [4, 8, 7],
-            "to": [11, 10, 9],
-            "rotation": {"angle": 0, "axis": "y", "origin": [9, 7, 7]},
-            "faces": {
-                "north": {"uv": [0, 0, 7, 2], "texture": "#0"},
-                "east": {"uv": [7, 0, 9, 2], "texture": "#0"},
-                "south": {"uv": [0, 2, 7, 4], "texture": "#0"},
-                "west": {"uv": [7, 2, 9, 4], "texture": "#0"},
-                "up": {"uv": [7, 6, 0, 4], "texture": "#0"},
-                "down": {"uv": [7, 6, 0, 8], "texture": "#0"}
-            }
-        }
-    ],
-    "display": {
-        "thirdperson_righthand": {
-            "rotation": [-0.61, -5.33, -12.96],
-            "translation": [0, 0.75, 0.75],
-            "scale": [0.60547, 1, 1]
-        },
-        "thirdperson_lefthand": {
-            "rotation": [20.77, -13.36, -21.29],
-            "translation": [0, 1, 0],
-            "scale": [0.58594, 1, 1]
-        },
-        "firstperson_righthand": {
-            "rotation": [0, -16.75, 0],
-            "translation": [-1.5, 2.25, 2],
-            "scale": [0.79102, 1.43946, 1.33594]
-        },
-        "firstperson_lefthand": {
-            "rotation": [1.42, -33.25, 0.66],
-            "translation": [1.75, 1.75, 1.5],
-            "scale": [0.93946, 1.68554, 1.31836]
-        },
-        "ground": {
-            "rotation": [0, 0, 0],
-            "translation": [0, 3, 0],
-            "scale": [0.75, 0.75, 0.75]
-        },
-        "gui": {
-            "rotation": [30, 225, 0],
-            "translation": [0, 0, 0],
-            "scale": [1.5, 1.5, 1.5]
-        },
-        "fixed": {
-            "rotation": [0, 180, 0],
-            "translation": [0, 0, 0],
-            "scale": [1, 1, 1]
-        }
-    }
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "rigmod:item/titanium_ingot"
+  }
 }
