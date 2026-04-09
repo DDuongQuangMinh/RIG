@@ -9,8 +9,9 @@ import com.rigmod.client.StandardLevel1LeggingsModel;
 import com.rigmod.client.VisionOverlay;
 import com.rigmod.client.RadarOverlay; 
 import com.rigmod.client.KeyBindings;
-import com.rigmod.client.RigWorkbenchModel; // NEW: Workbench Model
-import com.rigmod.client.RigWorkbenchRenderer; // NEW: Workbench Renderer
+import com.rigmod.client.RigWorkbenchModel;
+import com.rigmod.client.RigWorkbenchRenderer;
+import com.rigmod.client.RigWorkbenchScreen; // UI Screen
 import com.rigmod.item.Custom3DArmorItem;
 import com.rigmod.item.ModItems;
 import com.rigmod.item.ModCreativeTabs;
@@ -18,7 +19,8 @@ import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CycleVisionModePacket;
 import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.block.ModBlocks;
-import com.rigmod.blockentity.ModBlockEntities; // NEW: Block Entities
+import com.rigmod.blockentity.ModBlockEntities;
+import com.rigmod.menu.ModMenuTypes; // UI Backend Menu
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -56,9 +58,13 @@ public class RigMod
     public RigMod() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         
+        // ==========================================
+        // MAIN REGISTRIES
+        // ==========================================
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
-        ModBlockEntities.register(modEventBus); // NEW: Registers the Workbench Brains
+        ModBlockEntities.register(modEventBus); // The Workbench animation brain
+        ModMenuTypes.register(modEventBus);     // The Workbench crafting math
         ModCreativeTabs.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
@@ -85,23 +91,31 @@ public class RigMod
     {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
+            event.enqueueWork(() -> {
+                // Links your Custom Screen (Frontend) to the Custom Menu (Backend)
+                net.minecraft.client.gui.screens.MenuScreens.register(
+                    ModMenuTypes.RIG_WORKBENCH_MENU.get(), 
+                    RigWorkbenchScreen::new
+                );
+            });
         }
 
         @SubscribeEvent
         public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
+            // Armor Layers
             event.registerLayerDefinition(StandardLevel1HelmetModel.LAYER_LOCATION, StandardLevel1HelmetModel::createBodyLayer);
             event.registerLayerDefinition(StandardLevel1ChestModel.LAYER_LOCATION, StandardLevel1ChestModel::createBodyLayer);
             event.registerLayerDefinition(StandardLevel1LeggingsModel.LAYER_LOCATION, StandardLevel1LeggingsModel::createBodyLayer);
             event.registerLayerDefinition(Level2HelmetModel.LAYER_LOCATION, Level2HelmetModel::createBodyLayer);
             event.registerLayerDefinition(Level2ChestplateModel.LAYER_LOCATION, Level2ChestplateModel::createBodyLayer);
             
-            // NEW: Registers the 3D Workbench Model Layer
+            // ✅ Workbench 3D Layer
             event.registerLayerDefinition(RigWorkbenchModel.LAYER_LOCATION, RigWorkbenchModel::createBodyLayer);
         }
 
-        // NEW: Links your Custom Renderer to your Block Entity
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+            // ✅ Links the Workbench Java Renderer to the Block Entity
             event.registerBlockEntityRenderer(ModBlockEntities.RIG_WORKBENCH_BE.get(), RigWorkbenchRenderer::new);
         }
 

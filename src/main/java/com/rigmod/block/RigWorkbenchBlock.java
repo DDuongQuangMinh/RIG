@@ -79,10 +79,16 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
         }
 
         // ==========================================
-        // CRAFTING UI (Coming Soon)
+        // CRAFTING UI (ONLINE)
         // ==========================================
         if (!level.isClientSide()) {
-            player.displayClientMessage(net.minecraft.network.chat.Component.literal("§e[RIG Workbench] Custom Crafting UI offline. Awaiting code!"), true);
+            BlockEntity entity = level.getBlockEntity(pos);
+            if (entity instanceof RigWorkbenchBlockEntity) {
+                // Opens the GUI for the player!
+                net.minecraftforge.network.NetworkHooks.openScreen(((net.minecraft.server.level.ServerPlayer) player), (RigWorkbenchBlockEntity) entity, pos);
+            } else {
+                throw new IllegalStateException("Our Container provider is missing!");
+            }
         }
 
         return InteractionResult.sidedSuccess(level.isClientSide());
