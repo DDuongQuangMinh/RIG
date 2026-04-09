@@ -16,7 +16,10 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> RAW_TITANIUM = ITEMS.register("raw_titanium",
-            () -> new Item(new Item.Properties()));    
+            () -> new Item(new Item.Properties()));   
+            
+    // Add this line where you register your other items!
+    public static final RegistryObject<Item> BATTERY_LEVEL_1 = ITEMS.register("battery_level_1", () -> new Item(new Item.Properties()));        
     // --- LEVEL 1 ARMOR (Tier 1) ---
     
     // Helmet

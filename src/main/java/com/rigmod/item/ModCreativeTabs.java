@@ -21,6 +21,7 @@ public class ModCreativeTabs {
             .displayItems((parameters, output) -> {
                 output.accept(ModItems.TITANIUM_INGOT.get());
                 output.accept(ModItems.RAW_TITANIUM.get());
+                output.accept(ModItems.BATTERY_LEVEL_1.get());
                 output.accept(ModItems.STANDARD_LEVEL_1_HELMET.get());
                 
                 // Add both variants to the tab

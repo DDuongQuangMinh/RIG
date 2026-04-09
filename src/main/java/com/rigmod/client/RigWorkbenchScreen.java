@@ -5,6 +5,7 @@ import com.rigmod.item.ModItems;
 import com.rigmod.menu.RigWorkbenchMenu;
 import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CraftArmorPacket;
+import com.rigmod.network.packet.RechargeArmorPacket;
 import com.rigmod.network.packet.SyncWorkbenchModePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,7 +14,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu> {
 
@@ -66,15 +66,13 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         }).bounds(x + 294, y + 205, 90, 20).build()); 
 
         this.rechargeButton = addRenderableWidget(Button.builder(Component.literal("Inject Power"), button -> {
-            System.out.println("Initiating Recharge...");
+            ModMessages.sendToServer(new RechargeArmorPacket());
             this.setFocused(null);
         }).bounds(x + 150, y + 180, 100, 20).build());
 
-        // HOLOGRAM SYNC: Tell the server we opened the GUI and what mode we are in!
         ModMessages.sendToServer(new SyncWorkbenchModePacket(this.menu.blockEntity.getBlockPos(), mainMode));
     }
 
-    // HOLOGRAM SYNC: Tell the server to shut off the hologram when we close the UI!
     @Override
     public void removed() {
         super.removed();
@@ -120,7 +118,8 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
                 guiGraphics.fill(tabX + 6, tabY + 2, tabX + 30, tabY + 28, 0xFF181818);
             }
 
-            ItemStack modeIcon = (m == 0) ? new ItemStack(Items.CRAFTING_TABLE) : new ItemStack(Items.REDSTONE);
+            // THE FIX: Replaced vanilla items with your custom ModItems!
+            ItemStack modeIcon = (m == 0) ? new ItemStack(ModItems.STANDARD_LEVEL_1_HELMET.get()) : new ItemStack(ModItems.BATTERY_LEVEL_1.get());
             guiGraphics.renderItem(modeIcon, tabX + 8, tabY + 6);
         }
 
@@ -204,16 +203,33 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             guiGraphics.fill(x + 61, y + 34, x + 339, y + imageHeight - 21, 0xFF181818);
             guiGraphics.drawCenteredString(this.font, "Power Injection Matrix", x + 200, y + 23, 0xFF00E5FF);
 
-            ItemStack jetpack = new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get());
-            PoseStack pose = guiGraphics.pose();
-            pose.pushPose();
-            pose.translate(x + 200, y + 100, 100); 
-            pose.scale(5.0F, 5.0F, 5.0F); 
-            guiGraphics.renderItem(jetpack, -8, -8);
-            pose.popPose();
+            ItemStack equippedChest = Minecraft.getInstance().player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST);
+            
+            if (equippedChest.getItem() instanceof com.rigmod.item.Custom3DArmorItem) {
+                PoseStack pose = guiGraphics.pose();
+                pose.pushPose();
+                pose.translate(x + 200, y + 100, 100); 
+                pose.scale(5.0F, 5.0F, 5.0F); 
+                guiGraphics.renderItem(equippedChest, -8, -8);
+                pose.popPose();
 
-            guiGraphics.drawCenteredString(this.font, "Target: Engineering Chestplate Level 2", x + 200, y + 150, 0xFFFFFF);
-            guiGraphics.drawCenteredString(this.font, "Status: Scanning Inventory for equipment...", x + 200, y + 165, 0xFFAAAAAA);
+                int power = equippedChest.getOrCreateTag().getInt("RigPower");
+                
+                this.rechargeButton.active = (power < 100);
+
+                int powerColor = (power == 100) ? 0xFF55FFFF : (power > 50) ? 0xFF55FF55 : (power > 20) ? 0xFFFFFF55 : 0xFFFF5555;
+
+                guiGraphics.drawCenteredString(this.font, "Target: " + equippedChest.getHoverName().getString(), x + 200, y + 140, 0xFFFFFF);
+                guiGraphics.drawCenteredString(this.font, "Core Power: " + power + "%", x + 200, y + 155, powerColor);
+                
+                guiGraphics.renderItem(new ItemStack(ModItems.BATTERY_LEVEL_1.get()), x + 125, y + 180);
+                
+            } else {
+                this.rechargeButton.active = false;
+
+                guiGraphics.drawCenteredString(this.font, "ERROR: NO RIG SUIT DETECTED", x + 200, y + 110, 0xFFFF5555);
+                guiGraphics.drawCenteredString(this.font, "Please equip a RIG Chestplate to recharge.", x + 200, y + 125, 0xFFAAAAAA);
+            }
         }
     }
 
@@ -227,7 +243,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             int tabY = y + 20 + (m * 35);
             if (mouseX >= tabX && mouseX <= tabX + 28 && mouseY >= tabY && mouseY <= tabY + 30) {
                 mainMode = m; 
-                // HOLOGRAM SYNC: Update the server when we switch tabs!
                 ModMessages.sendToServer(new SyncWorkbenchModePacket(this.menu.blockEntity.getBlockPos(), mainMode));
                 return true;
             }

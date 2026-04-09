@@ -49,6 +49,13 @@ public class ModMessages {
                 .encoder(SyncWorkbenchModePacket::toBytes)
                 .consumerMainThread(SyncWorkbenchModePacket::handle)
                 .add();
+
+        // ✅ Register the new Recharge Packet!
+        net.messageBuilder(com.rigmod.network.packet.RechargeArmorPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(com.rigmod.network.packet.RechargeArmorPacket::new)
+                .encoder(com.rigmod.network.packet.RechargeArmorPacket::toBytes)
+                .consumerMainThread(com.rigmod.network.packet.RechargeArmorPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

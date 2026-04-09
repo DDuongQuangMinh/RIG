@@ -7,7 +7,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.inventory.Slot; // Make sure this is imported!
+import net.minecraft.world.inventory.Slot; 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -25,9 +25,10 @@ public class RigWorkbenchMenu extends AbstractContainerMenu {
         this.blockEntity = (RigWorkbenchBlockEntity) entity;
         this.level = inv.player.level();
 
-        // FIX: Put the slots back so the Server syncs your items...
+        // FIX: Track the inventory, hotbar, AND ARMOR so the UI updates instantly!
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
+        addPlayerArmor(inv);
     }
 
     @Override
@@ -47,7 +48,6 @@ public class RigWorkbenchMenu extends AbstractContainerMenu {
     private void addPlayerInventory(Inventory playerInventory) {
         for (int i = 0; i < 3; ++i) {
             for (int l = 0; l < 9; ++l) {
-                // Set to -1000 X and Y! They exist to the server, but are invisible to the player.
                 this.addSlot(new Slot(playerInventory, l + i * 9 + 9, -1000, -1000));
             }
         }
@@ -55,8 +55,15 @@ public class RigWorkbenchMenu extends AbstractContainerMenu {
 
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int i = 0; i < 9; ++i) {
-            // Set to -1000 X and Y!
             this.addSlot(new Slot(playerInventory, i, -1000, -1000));
+        }
+    }
+
+    // NEW: Puts your 4 armor slots off-screen so the Server instantly syncs power levels!
+    private void addPlayerArmor(Inventory playerInventory) {
+        for (int i = 0; i < 4; ++i) {
+            // Vanilla armor slots are indices 36, 37, 38, and 39
+            this.addSlot(new Slot(playerInventory, 36 + i, -1000, -1000));
         }
     }
 }

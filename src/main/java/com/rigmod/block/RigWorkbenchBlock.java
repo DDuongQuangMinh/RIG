@@ -3,7 +3,9 @@ package com.rigmod.block;
 import com.rigmod.item.ModItems;
 import com.rigmod.blockentity.ModBlockEntities;
 import com.rigmod.blockentity.RigWorkbenchBlockEntity;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -11,63 +13,98 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+
 import org.jetbrains.annotations.Nullable;
 
-// Changed to BaseEntityBlock to support the ticking animation brain!
 public class RigWorkbenchBlock extends BaseEntityBlock {
+
+    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
     public RigWorkbenchBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
-    // Tells Minecraft to hide the static JSON block and draw your animated Java Model instead
+    // Placement (standard Minecraft behavior)
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return this.defaultBlockState()
+                .setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+
+    // Rotation support
+    @Override
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        return state.rotate(mirror.getRotation(state.getValue(FACING)));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
+        builder.add(FACING);
+    }
+
+    // ==========================================
+    // RENDER
+    // ==========================================
     @Override
     public RenderShape getRenderShape(BlockState state) {
         return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
     // ==========================================
-    // LIGHTING FIX: Prevents the 3D model from turning black!
+    // LIGHTING FIX
     // ==========================================
     @Override
-    public float getShadeBrightness(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos pos) {
-        return 1.0F; // Forces the block to be fully lit by the environment
+    public float getShadeBrightness(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos) {
+        return 1.0F;
     }
 
     @Override
-    public boolean propagatesSkylightDown(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos pos) {
-        return true; // Allows sunlight to pass through the block
+    public boolean propagatesSkylightDown(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos) {
+        return true;
     }
 
-    // Links this block to your custom BlockEntity class
+    // ==========================================
+    // BLOCK ENTITY
+    // ==========================================
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new RigWorkbenchBlockEntity(pos, state);
     }
 
-    // Tells the game to execute the 'tick' method every single frame to run the animation math
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return createTickerHelper(type, ModBlockEntities.RIG_WORKBENCH_BE.get(), RigWorkbenchBlockEntity::tick);
     }
 
+    // ==========================================
+    // INTERACTION (UNCHANGED)
+    // ==========================================
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         ItemStack heldItem = player.getItemInHand(hand);
 
-        // ==========================================
-        // RECHARGE MECHANIC
-        // ==========================================
         if (heldItem.getItem() == ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()) {
             if (!level.isClientSide()) {
                 CompoundTag tag = heldItem.getOrCreateTag();
@@ -75,13 +112,9 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
                 int maxFuel = 1200;
 
                 if (currentFuel < maxFuel) {
-                    // Refill the tank
                     tag.putInt("JetpackFuel", maxFuel);
                     player.displayClientMessage(net.minecraft.network.chat.Component.literal("§b[RIG Workbench] Jetpack Fully Recharged!"), true);
-                    
-                    // Play a high-tech sound effect
                     level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                    
                     return InteractionResult.SUCCESS;
                 } else {
                     player.displayClientMessage(net.minecraft.network.chat.Component.literal("§a[RIG Workbench] Jetpack is already at 100%."), true);
@@ -91,16 +124,14 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
             return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
-        // ==========================================
-        // CRAFTING UI (ONLINE)
-        // ==========================================
         if (!level.isClientSide()) {
             BlockEntity entity = level.getBlockEntity(pos);
             if (entity instanceof RigWorkbenchBlockEntity) {
-                // Opens the GUI for the player!
-                net.minecraftforge.network.NetworkHooks.openScreen(((net.minecraft.server.level.ServerPlayer) player), (RigWorkbenchBlockEntity) entity, pos);
-            } else {
-                throw new IllegalStateException("Our Container provider is missing!");
+                net.minecraftforge.network.NetworkHooks.openScreen(
+                        ((net.minecraft.server.level.ServerPlayer) player),
+                        (RigWorkbenchBlockEntity) entity,
+                        pos
+                );
             }
         }
 

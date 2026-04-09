@@ -29,51 +29,36 @@ public class ArmorFlightHandler {
             if (!player.isCreative() && !player.isSpectator()) {
                 if (isWearingFlightArmor) {
                     
-                    // Access the chestplate's hidden data
+                    // Access the chestplate's hidden data (Must match the Workbench UI!)
                     CompoundTag tag = chestArmor.getOrCreateTag();
-                    int maxFuel = 1200; // 60 seconds of continuous flight
                     
-                    // If the armor is brand new, fill the tank!
-                    if (!tag.contains("JetpackFuel")) {
-                        tag.putInt("JetpackFuel", maxFuel);
+                    // If the armor is brand new, default it to 0% (Player MUST charge it at the station!)
+                    if (!tag.contains("RigPower")) {
+                        tag.putInt("RigPower", 0);
                     }
-                    int currentFuel = tag.getInt("JetpackFuel");
+                    int currentFuel = tag.getInt("RigPower");
 
                     // ⚙️ IF ACTIVELY FLYING IN THE AIR: Drain Fuel
                     if (player.getAbilities().flying) {
-                        currentFuel--;
-                        tag.putInt("JetpackFuel", currentFuel);
+                        
+                        // Only drain 1% every 20 ticks (1 full second)
+                        if (player.tickCount % 20 == 0) {
+                            currentFuel--;
+                            tag.putInt("RigPower", currentFuel);
 
-                        // HUD: Display fuel percentage on the Action Bar
-                        if (currentFuel % 10 == 0 || currentFuel < 60) {
-                            int percent = (int) (((float) currentFuel / maxFuel) * 100);
-                            String color = currentFuel < 240 ? "§c" : "§b"; // Red if under 20%, Cyan otherwise
-                            
-                            // The 'true' at the end makes it appear above the hotbar instead of spamming chat!
-                            player.displayClientMessage(net.minecraft.network.chat.Component.literal(color + "Jetpack Fuel: " + percent + "%"), true);
-                        }
+                            // HUD: Display fuel percentage on the Action Bar
+                            String color = currentFuel < 20 ? "§c" : "§b"; // Red if under 20%, Cyan otherwise
+                            player.displayClientMessage(net.minecraft.network.chat.Component.literal(color + "Core Power: " + currentFuel + "%"), true);
 
-                        // OUT OF FUEL: Instantly drop the player
-                        if (currentFuel <= 0) {
-                            player.getAbilities().mayfly = false;
-                            player.getAbilities().flying = false;
-                            player.onUpdateAbilities();
-                            player.displayClientMessage(net.minecraft.network.chat.Component.literal("§c[WARNING] Jetpack Depleted!"), true);
-                        }
-                    } 
-                    // ⚙️ IF STANDING ON THE GROUND: Recharge Fuel
-                    else if (player.onGround()) {
-                        if (currentFuel < maxFuel) {
-                            currentFuel += 4; // Recharges 4x faster than it drains
-                            if (currentFuel > maxFuel) currentFuel = maxFuel;
-                            tag.putInt("JetpackFuel", currentFuel);
-                            
-                            // Let the player know it is fully charged
-                            if (currentFuel == maxFuel) {
-                                player.displayClientMessage(net.minecraft.network.chat.Component.literal("§aJetpack Fully Charged!"), true);
+                            // OUT OF FUEL: Instantly drop the player
+                            if (currentFuel <= 0) {
+                                player.getAbilities().mayfly = false;
+                                player.getAbilities().flying = false;
+                                player.onUpdateAbilities();
+                                player.displayClientMessage(net.minecraft.network.chat.Component.literal("§c[WARNING] Suit Power Depleted!"), true);
                             }
                         }
-                    }
+                    } 
 
                     // Always allow them to double-jump to start flying IF they have fuel
                     if (currentFuel > 0 && !player.getAbilities().mayfly) {

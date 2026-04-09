@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "rigmod:block/rig_workbench" },
+    "facing=south": { "model": "rigmod:block/rig_workbench", "y": 180 },
+    "facing=west":  { "model": "rigmod:block/rig_workbench", "y": 270 },
+    "facing=east":  { "model": "rigmod:block/rig_workbench", "y": 90 }
+  }
+}
