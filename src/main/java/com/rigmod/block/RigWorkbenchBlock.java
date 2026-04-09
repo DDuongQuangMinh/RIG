@@ -34,6 +34,19 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
         return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
+    // ==========================================
+    // LIGHTING FIX: Prevents the 3D model from turning black!
+    // ==========================================
+    @Override
+    public float getShadeBrightness(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos pos) {
+        return 1.0F; // Forces the block to be fully lit by the environment
+    }
+
+    @Override
+    public boolean propagatesSkylightDown(net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.BlockGetter level, net.minecraft.core.BlockPos pos) {
+        return true; // Allows sunlight to pass through the block
+    }
+
     // Links this block to your custom BlockEntity class
     @Nullable
     @Override

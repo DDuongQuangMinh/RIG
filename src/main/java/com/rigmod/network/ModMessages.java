@@ -1,9 +1,10 @@
 package com.rigmod.network;
 
 import com.rigmod.RigMod;
-import com.rigmod.network.packet.CraftArmorPacket; // ✅ NEW: Import your crafting packet
+import com.rigmod.network.packet.CraftArmorPacket;
 import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.network.packet.CycleVisionModePacket;
+import com.rigmod.network.packet.SyncWorkbenchModePacket; // ✅ NEW: Import added!
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
@@ -24,25 +25,29 @@ public class ModMessages {
 
         INSTANCE = net;
 
-        // Register our specific packet
         net.messageBuilder(CycleVisionModePacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(CycleVisionModePacket::new)
                 .encoder(CycleVisionModePacket::toBytes)
                 .consumerMainThread(CycleVisionModePacket::handle)
                 .add();
 
-        // NEW: Your Radar Packet
         net.messageBuilder(CycleRadarModePacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(CycleRadarModePacket::new)
                 .encoder(CycleRadarModePacket::toBytes)
                 .consumerMainThread(CycleRadarModePacket::handle)
                 .add();
 
-        // NEW: The Crafting Packet
         net.messageBuilder(CraftArmorPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(CraftArmorPacket::new)
                 .encoder(CraftArmorPacket::toBytes)
                 .consumerMainThread(CraftArmorPacket::handle)
+                .add();
+
+        // THE FIX: The server now knows what the Hologram sync packet is!
+        net.messageBuilder(SyncWorkbenchModePacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(SyncWorkbenchModePacket::new)
+                .encoder(SyncWorkbenchModePacket::toBytes)
+                .consumerMainThread(SyncWorkbenchModePacket::handle)
                 .add();
     }
 

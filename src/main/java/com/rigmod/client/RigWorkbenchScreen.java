@@ -5,6 +5,7 @@ import com.rigmod.item.ModItems;
 import com.rigmod.menu.RigWorkbenchMenu;
 import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CraftArmorPacket;
+import com.rigmod.network.packet.SyncWorkbenchModePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -16,8 +17,7 @@ import net.minecraft.world.item.Items;
 
 public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu> {
 
-    // ⚙️ MAIN NAVIGATION MODES
-    private int mainMode = 0; // 0 = Crafting, 1 = Recharging
+    private int mainMode = 0; 
     
     private Button craftButton;
     private Button rechargeButton;
@@ -58,7 +58,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        // The Crafting Button (Only visible in Mode 0)
         this.craftButton = addRenderableWidget(Button.builder(Component.literal("Craft"), button -> {
             if (countTitanium() >= 8) {
                 ModMessages.sendToServer(new CraftArmorPacket(selectedTab, selectedIndex));
@@ -66,12 +65,20 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             this.setFocused(null); 
         }).bounds(x + 294, y + 205, 90, 20).build()); 
 
-        // The Recharging Button (Only visible in Mode 1)
         this.rechargeButton = addRenderableWidget(Button.builder(Component.literal("Inject Power"), button -> {
             System.out.println("Initiating Recharge...");
-            // (We will add the Recharge Packet next time!)
             this.setFocused(null);
         }).bounds(x + 150, y + 180, 100, 20).build());
+
+        // HOLOGRAM SYNC: Tell the server we opened the GUI and what mode we are in!
+        ModMessages.sendToServer(new SyncWorkbenchModePacket(this.menu.blockEntity.getBlockPos(), mainMode));
+    }
+
+    // HOLOGRAM SYNC: Tell the server to shut off the hologram when we close the UI!
+    @Override
+    public void removed() {
+        super.removed();
+        ModMessages.sendToServer(new SyncWorkbenchModePacket(this.menu.blockEntity.getBlockPos(), -1));
     }
 
     private int countTitanium() {
@@ -98,42 +105,28 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        // Toggle button visibility based on which tab we are looking at!
         this.craftButton.visible = (mainMode == 0);
         this.rechargeButton.visible = (mainMode == 1);
 
-        // ==========================================
-        // 1. THE VERTICAL SIDE TABS (Left Edge)
-        // ==========================================
         for (int m = 0; m < 2; m++) {
-            int tabX = x - 28; // Sticks out to the left
+            int tabX = x - 28;
             int tabY = y + 20 + (m * 35);
 
             if (mainMode == m) {
-                // Active Tab (Light Grey, connects to main UI)
                 guiGraphics.fill(tabX, tabY, tabX + 30, tabY + 30, 0xFF4A4A4A);
                 guiGraphics.fill(tabX + 2, tabY + 2, tabX + 30, tabY + 28, 0xFF222222); 
             } else {
-                // Inactive Tab (Darker Grey, pushed back slightly)
                 guiGraphics.fill(tabX + 4, tabY, tabX + 30, tabY + 30, 0xFF333333);
                 guiGraphics.fill(tabX + 6, tabY + 2, tabX + 30, tabY + 28, 0xFF181818);
             }
 
-            // Tab Icons: Crafting Table for Crafting, Redstone for Recharging
             ItemStack modeIcon = (m == 0) ? new ItemStack(Items.CRAFTING_TABLE) : new ItemStack(Items.REDSTONE);
             guiGraphics.renderItem(modeIcon, tabX + 8, tabY + 6);
         }
 
-        // ==========================================
-        // 2. BASE BACKGROUND
-        // ==========================================
         guiGraphics.fill(x, y, x + imageWidth, y + imageHeight, 0xFF4A4A4A); 
         guiGraphics.fill(x + 2, y + 2, x + imageWidth - 2, y + imageHeight - 2, 0xFF222222); 
 
-
-        // ==========================================
-        // 3. MODE 0: CRAFTING UI
-        // ==========================================
         if (mainMode == 0) {
             guiGraphics.fill(x + 6, y + 6, x + 160, y + imageHeight - 6, 0xFF333333);
             guiGraphics.fill(x + 7, y + 20, x + 159, y + imageHeight - 7, 0xFF181818);
@@ -206,17 +199,11 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             guiGraphics.drawString(this.font, "Titanium Ingot", x + 290, y + 55, 0xFFAAAAAA, false);
             guiGraphics.drawString(this.font, "Count: 1", x + 290, y + 185, 0xFFFFFF, false);
         }
-        // ==========================================
-        // 4. MODE 1: RECHARGING UI
-        // ==========================================
         else if (mainMode == 1) {
-            
-            // Draw a big central scanning frame
             guiGraphics.fill(x + 60, y + 20, x + 340, y + imageHeight - 20, 0xFF333333);
             guiGraphics.fill(x + 61, y + 34, x + 339, y + imageHeight - 21, 0xFF181818);
             guiGraphics.drawCenteredString(this.font, "Power Injection Matrix", x + 200, y + 23, 0xFF00E5FF);
 
-            // Fake 3D render of the Jetpack to show we are in Recharge mode
             ItemStack jetpack = new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get());
             PoseStack pose = guiGraphics.pose();
             pose.pushPose();
@@ -230,25 +217,22 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         }
     }
 
-    // ==========================================
-    // 5. INTERACTION LOGIC
-    // ==========================================
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        // A. Check if player clicked the Side Vertical Navigation Tabs
         for (int m = 0; m < 2; m++) {
             int tabX = x - 28;
             int tabY = y + 20 + (m * 35);
             if (mouseX >= tabX && mouseX <= tabX + 28 && mouseY >= tabY && mouseY <= tabY + 30) {
-                mainMode = m; // Switch mode!
+                mainMode = m; 
+                // HOLOGRAM SYNC: Update the server when we switch tabs!
+                ModMessages.sendToServer(new SyncWorkbenchModePacket(this.menu.blockEntity.getBlockPos(), mainMode));
                 return true;
             }
         }
 
-        // B. Standard Crafting Menu Clicks (Only active in Mode 0)
         if (mainMode == 0) {
             for (int t = 0; t < tabIcons.length; t++) {
                 int tabX = x + 168 + (t * 26);
