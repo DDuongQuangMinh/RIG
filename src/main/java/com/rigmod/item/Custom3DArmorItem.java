@@ -5,7 +5,7 @@ import com.google.common.collect.Multimap;
 import com.rigmod.RigMod;
 import com.rigmod.client.Level2HelmetModel;
 import com.rigmod.client.Level2ChestplateModel; 
-import com.rigmod.client.StandardLevel1ChestModel;
+import com.rigmod.client.model.StandardLevel1ChestModel; // Updated to match your new model folder!
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
 import net.minecraft.client.Minecraft;
@@ -190,8 +190,16 @@ public class Custom3DArmorItem extends ArmorItem {
                         customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
                         return customModel2;
                     } else {
-                        StandardLevel1ChestModel<?> customModel1 = new StandardLevel1ChestModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION));
-                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
+                        // THE FIX: Directly bakes the new Level 1 Chestplate model without needing LAYER_LOCATION
+                        StandardLevel1ChestModel<?> customModel1 = new StandardLevel1ChestModel<>(StandardLevel1ChestModel.createBodyLayer().bakeRoot());
+                        
+                        // Your brilliant posture-syncing logic remains perfectly intact
+                        customModel1.young = _default.young; 
+                        customModel1.crouching = _default.crouching; 
+                        customModel1.riding = _default.riding; 
+                        customModel1.rightArmPose = _default.rightArmPose; 
+                        customModel1.leftArmPose = _default.leftArmPose;
+                        
                         return customModel1;
                     }
                 }

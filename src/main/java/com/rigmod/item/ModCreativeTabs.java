@@ -22,6 +22,12 @@ public class ModCreativeTabs {
                 output.accept(ModItems.TITANIUM_INGOT.get());
                 output.accept(ModItems.RAW_TITANIUM.get());
                 output.accept(ModItems.BATTERY_LEVEL_1.get());
+                output.accept(ModItems.BATTERY_LEVEL_2.get());
+                output.accept(ModItems.BATTERY_LEVEL_3.get());
+                output.accept(ModItems.BATTERY_LEVEL_4.get());
+                output.accept(ModItems.BATTERY_LEVEL_5.get());
+                output.accept(ModItems.BATTERY_LEVEL_6.get());
+                output.accept(ModItems.BATTERY_LEVEL_7.get());
                 output.accept(ModItems.STANDARD_LEVEL_1_HELMET.get());
                 
                 // Add both variants to the tab

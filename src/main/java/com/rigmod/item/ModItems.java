@@ -18,8 +18,15 @@ public class ModItems {
     public static final RegistryObject<Item> RAW_TITANIUM = ITEMS.register("raw_titanium",
             () -> new Item(new Item.Properties()));   
             
-    // Add this line where you register your other items!
+    // --- BATTERIES ---
     public static final RegistryObject<Item> BATTERY_LEVEL_1 = ITEMS.register("battery_level_1", () -> new Item(new Item.Properties()));        
+    public static final RegistryObject<Item> BATTERY_LEVEL_2 = ITEMS.register("battery_level_2", () -> new Item(new Item.Properties()));        
+    public static final RegistryObject<Item> BATTERY_LEVEL_3 = ITEMS.register("battery_level_3", () -> new Item(new Item.Properties()));        
+    public static final RegistryObject<Item> BATTERY_LEVEL_4 = ITEMS.register("battery_level_4", () -> new Item(new Item.Properties()));        
+    public static final RegistryObject<Item> BATTERY_LEVEL_5 = ITEMS.register("battery_level_5", () -> new Item(new Item.Properties()));        
+    public static final RegistryObject<Item> BATTERY_LEVEL_6 = ITEMS.register("battery_level_6", () -> new Item(new Item.Properties()));        
+    public static final RegistryObject<Item> BATTERY_LEVEL_7 = ITEMS.register("battery_level_7", () -> new Item(new Item.Properties()));        
+
     // --- LEVEL 1 ARMOR (Tier 1) ---
     
     // Helmet

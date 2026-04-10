@@ -9,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -27,6 +28,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -39,14 +41,12 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
-    // Placement (standard Minecraft behavior)
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return this.defaultBlockState()
                 .setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
 
-    // Rotation support
     @Override
     public BlockState rotate(BlockState state, Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
@@ -62,17 +62,11 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
         builder.add(FACING);
     }
 
-    // ==========================================
-    // RENDER
-    // ==========================================
     @Override
     public RenderShape getRenderShape(BlockState state) {
         return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
-    // ==========================================
-    // LIGHTING FIX
-    // ==========================================
     @Override
     public float getShadeBrightness(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos) {
         return 1.0F;
@@ -83,9 +77,6 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
         return true;
     }
 
-    // ==========================================
-    // BLOCK ENTITY
-    // ==========================================
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -99,8 +90,26 @@ public class RigWorkbenchBlock extends BaseEntityBlock {
     }
 
     // ==========================================
-    // INTERACTION (UNCHANGED)
+    // 🛑 PREVENTS ITEM LOSS WHEN BROKEN
     // ==========================================
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (state.getBlock() != newState.getBlock()) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof RigWorkbenchBlockEntity rigEntity) {
+                rigEntity.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
+                    for (int i = 0; i < handler.getSlots(); i++) {
+                        ItemStack stack = handler.getStackInSlot(i);
+                        if (!stack.isEmpty()) {
+                            Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), stack);
+                        }
+                    }
+                });
+            }
+            super.onRemove(state, level, pos, newState, isMoving);
+        }
+    }
+
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         ItemStack heldItem = player.getItemInHand(hand);

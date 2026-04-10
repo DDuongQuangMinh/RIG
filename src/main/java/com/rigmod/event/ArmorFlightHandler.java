@@ -29,10 +29,8 @@ public class ArmorFlightHandler {
             if (!player.isCreative() && !player.isSpectator()) {
                 if (isWearingFlightArmor) {
                     
-                    // Access the chestplate's hidden data (Must match the Workbench UI!)
                     CompoundTag tag = chestArmor.getOrCreateTag();
                     
-                    // If the armor is brand new, default it to 0% (Player MUST charge it at the station!)
                     if (!tag.contains("RigPower")) {
                         tag.putInt("RigPower", 0);
                     }
@@ -45,10 +43,6 @@ public class ArmorFlightHandler {
                         if (player.tickCount % 20 == 0) {
                             currentFuel--;
                             tag.putInt("RigPower", currentFuel);
-
-                            // HUD: Display fuel percentage on the Action Bar
-                            String color = currentFuel < 20 ? "§c" : "§b"; // Red if under 20%, Cyan otherwise
-                            player.displayClientMessage(net.minecraft.network.chat.Component.literal(color + "Core Power: " + currentFuel + "%"), true);
 
                             // OUT OF FUEL: Instantly drop the player
                             if (currentFuel <= 0) {
@@ -84,13 +78,13 @@ public class ArmorFlightHandler {
                 
                 float bodyYaw = player.yBodyRot * ((float)Math.PI / 180F);
                 
-                double backwardX = Math.sin(bodyYaw) * 0.25D;
-                double backwardZ = -Math.cos(bodyYaw) * 0.25D;
+                double backwardX = -Math.sin(bodyYaw) * 0.45D; 
+                double backwardZ = Math.cos(bodyYaw) * 0.45D; 
                 
-                double sideX = Math.cos(bodyYaw) * 0.22D;
-                double sideZ = Math.sin(bodyYaw) * 0.22D;
+                double sideX = Math.cos(bodyYaw) * 0.28D;
+                double sideZ = Math.sin(bodyYaw) * 0.28D;
                 
-                double y = player.getY() + 1.3D; 
+                double y = player.getY() + 1.1D; 
 
                 // --- LEFT THRUSTER ---
                 double leftX = player.getX() + backwardX + sideX;
