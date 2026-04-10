@@ -21,6 +21,7 @@ public class ModCreativeTabs {
             .displayItems((parameters, output) -> {
                 output.accept(ModItems.TITANIUM_INGOT.get());
                 output.accept(ModItems.RAW_TITANIUM.get());
+                output.accept(ModBlocks.RAW_TITANIUM_BLOCK.get());
                 output.accept(ModItems.BATTERY_LEVEL_1.get());
                 output.accept(ModItems.BATTERY_LEVEL_2.get());
                 output.accept(ModItems.BATTERY_LEVEL_3.get());
@@ -39,6 +40,9 @@ public class ModCreativeTabs {
 
                 // Add the new Engineering Level 2 Helmet to the tab
                 output.accept(ModItems.ENGINEERING_LEVEL_2_HELMET.get());
+
+                // Add the new Engineering Level 3 Helmet to the tab
+                output.accept(ModItems.ENGINEERING_LEVEL_3_HELMET.get());
 
                 // Add the new Level 2 Chestplate to the tab
                 output.accept(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get());

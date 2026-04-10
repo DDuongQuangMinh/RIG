@@ -14,7 +14,9 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu> {
 
@@ -41,28 +43,40 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         new ItemStack(ModItems.BATTERY_LEVEL_7.get())
     };
 
-    // 🔥 THE POWER VALUES (Matches your request)
     private final int[] powerValues = {5, 7, 12, 15, 20, 30, 40};
 
+    // 🔥 Added 4th Tab for Batteries
     private final ItemStack[][] categorizedBlueprints = new ItemStack[][]{
-        new ItemStack[]{
+        new ItemStack[]{ // Tab 0: Helmets
+            new ItemStack(ModItems.ENGINEERING_LEVEL_3_HELMET.get()),
             new ItemStack(ModItems.ENGINEERING_LEVEL_2_HELMET.get()),
             new ItemStack(ModItems.STANDARD_LEVEL_1_HELMET.get())
         },
-        new ItemStack[]{
+        new ItemStack[]{ // Tab 1: Chestplates
             new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()),
             new ItemStack(ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get()),
             new ItemStack(ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get())
         },
-        new ItemStack[]{
+        new ItemStack[]{ // Tab 2: Leggings
             new ItemStack(ModItems.STANDARD_LEVEL_1_LEGGINGS.get())
+        },
+        new ItemStack[]{ // Tab 3: Batteries
+            new ItemStack(ModItems.BATTERY_LEVEL_1.get()),
+            new ItemStack(ModItems.BATTERY_LEVEL_2.get()),
+            new ItemStack(ModItems.BATTERY_LEVEL_3.get()),
+            new ItemStack(ModItems.BATTERY_LEVEL_4.get()),
+            new ItemStack(ModItems.BATTERY_LEVEL_5.get()),
+            new ItemStack(ModItems.BATTERY_LEVEL_6.get()),
+            new ItemStack(ModItems.BATTERY_LEVEL_7.get())
         }
     };
 
+    // 🔥 Added Battery Icon to Tab Headers
     private final ItemStack[] tabIcons = new ItemStack[]{
         new ItemStack(ModItems.ENGINEERING_LEVEL_2_HELMET.get()),
         new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()),
-        new ItemStack(ModItems.STANDARD_LEVEL_1_LEGGINGS.get())
+        new ItemStack(ModItems.STANDARD_LEVEL_1_LEGGINGS.get()),
+        new ItemStack(ModItems.BATTERY_LEVEL_3.get()) 
     };
 
     public RigWorkbenchScreen(RigWorkbenchMenu menu, Inventory playerInventory, Component title) {
@@ -78,13 +92,10 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         int y = (height - imageHeight) / 2;
 
         this.craftButton = addRenderableWidget(Button.builder(Component.literal("Craft"), button -> {
-            if (countTitanium() >= 8) {
-                ModMessages.sendToServer(new CraftArmorPacket(selectedTab, selectedIndex));
-            }
+            ModMessages.sendToServer(new CraftArmorPacket(selectedTab, selectedIndex));
             this.setFocused(null); 
         }).bounds(x + 294, y + 205, 90, 20).build()); 
 
-        // ✅ RECHARGE NOW SENDS THE SELECTED BATTERY INDEX!
         this.rechargeButton = addRenderableWidget(Button.builder(Component.literal("Inject Power"), button -> {
             if (selectedBatteryIndex != -1) {
                 ModMessages.sendToServer(new RechargeArmorPacket(selectedBatteryIndex)); 
@@ -101,13 +112,7 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         ModMessages.sendToServer(new SyncWorkbenchModePacket(this.menu.blockEntity.getBlockPos(), -1));
     }
 
-    // Helper to count Items in inventory (Titanium)
-    private int countTitanium() {
-        return countItem(ModItems.TITANIUM_INGOT.get());
-    }
-
-    // ✅ NEW Helper to count any item (used to check if you own the battery!)
-    private int countItem(net.minecraft.world.item.Item item) {
+    private int countItem(Item item) {
         int count = 0;
         Inventory inv = Minecraft.getInstance().player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
@@ -117,6 +122,33 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             }
         }
         return count;
+    }
+
+    // ==========================================
+    // 🛠️ DYNAMIC RECIPE DATABASE
+    // ==========================================
+    private ItemStack[] getRecipe(Item item) {
+        // Helmets
+        if (item == ModItems.STANDARD_LEVEL_1_HELMET.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 5), new ItemStack(ModItems.BATTERY_LEVEL_1.get(), 2), new ItemStack(Items.ENDER_EYE, 1) };
+        if (item == ModItems.ENGINEERING_LEVEL_2_HELMET.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 7), new ItemStack(ModItems.BATTERY_LEVEL_2.get(), 2), new ItemStack(Items.ENDER_EYE, 3) };
+        if (item == ModItems.ENGINEERING_LEVEL_3_HELMET.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 10), new ItemStack(ModItems.BATTERY_LEVEL_3.get(), 1), new ItemStack(Items.BLAZE_ROD, 5), new ItemStack(Items.NETHERITE_INGOT, 3) };
+        // Chests
+        if (item == ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 5), new ItemStack(Items.COPPER_INGOT, 7), new ItemStack(Items.REDSTONE, 5), new ItemStack(Items.QUARTZ, 5) };
+        if (item == ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 5), new ItemStack(Items.QUARTZ, 12), new ItemStack(Items.REDSTONE, 7), new ItemStack(Items.DIAMOND, 3) };
+        if (item == ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 10), new ItemStack(Items.QUARTZ, 28), new ItemStack(ModItems.BATTERY_LEVEL_5.get(), 5), new ItemStack(Items.DIAMOND, 12), new ItemStack(Items.NETHERITE_INGOT, 3) };
+        // Legs
+        if (item == ModItems.STANDARD_LEVEL_1_LEGGINGS.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 4), new ItemStack(Items.BLACK_DYE, 3), new ItemStack(Items.QUARTZ, 6) };
+        
+        // Batteries
+        if (item == ModItems.BATTERY_LEVEL_1.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 1), new ItemStack(Items.REDSTONE, 4) };
+        if (item == ModItems.BATTERY_LEVEL_2.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 2), new ItemStack(Items.REDSTONE, 8) };
+        if (item == ModItems.BATTERY_LEVEL_3.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 3), new ItemStack(Items.REDSTONE, 12) };
+        if (item == ModItems.BATTERY_LEVEL_4.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 4), new ItemStack(Items.REDSTONE, 16), new ItemStack(Items.QUARTZ, 1) };
+        if (item == ModItems.BATTERY_LEVEL_5.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 5), new ItemStack(Items.REDSTONE, 20), new ItemStack(Items.QUARTZ, 2) };
+        if (item == ModItems.BATTERY_LEVEL_6.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 6), new ItemStack(Items.REDSTONE, 24), new ItemStack(Items.QUARTZ, 3) };
+        if (item == ModItems.BATTERY_LEVEL_7.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 7), new ItemStack(Items.REDSTONE, 28), new ItemStack(Items.QUARTZ, 4) };
+
+        return new ItemStack[0];
     }
 
     @Override
@@ -182,7 +214,7 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             guiGraphics.fill(x + 285, y + 20, x + imageWidth - 7, y + imageHeight - 7, 0xFF181818);
 
             guiGraphics.drawCenteredString(this.font, "Preview", x + 83, y + 9, 0xFFFFFF);
-            guiGraphics.drawString(this.font, "Ingredient:", x + 290, y + 9, 0xFFFFFF, false);
+            guiGraphics.drawString(this.font, "Requirements:", x + 290, y + 9, 0xFFFFFF, false);
 
             for (int t = 0; t < tabIcons.length; t++) {
                 int tabX = x + 168 + (t * 26); 
@@ -204,7 +236,7 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
                 if (i == selectedIndex) guiGraphics.fill(x + 166, itemY - 2, x + 278, itemY + 20, 0xFF00FFFF); 
                 
                 guiGraphics.renderItem(currentList[i], x + 168, itemY);
-                String name = currentList[i].getHoverName().getString();
+                String name = currentList[i].getHoverName().getString().replace("item.rigmod.", "");
                 if (name.length() > 14) name = name.substring(0, 14) + "...";
                 
                 int textColor = (i == selectedIndex) ? 0x000000 : 0xFFFFFF;
@@ -224,23 +256,36 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             pose.pushPose();
             pose.translate(x + 83, y + 210, 0); 
             pose.scale(0.9F, 0.9F, 1.0F); 
-            guiGraphics.drawCenteredString(this.font, selectedItem.getHoverName(), 0, 0, 0xFFFFFF);
+            String dName = selectedItem.getHoverName().getString().replace("item.rigmod.", "");
+            guiGraphics.drawCenteredString(this.font, dName, 0, 0, 0xFFFFFF);
             pose.popPose();
 
-            int requiredAmount = 8; 
-            int playerTitaniumCount = countTitanium();
-            int countColor = (playerTitaniumCount >= requiredAmount) ? 0xFF55FF55 : 0xFFFF5555;
+            // 🔥 RENDERS DYNAMIC RECIPE ICONS AND TEXT
+            ItemStack[] recipe = getRecipe(selectedItem.getItem());
+            int ingY = y + 30;
+            boolean canCraft = true;
 
-            guiGraphics.renderItem(new ItemStack(ModItems.TITANIUM_INGOT.get()), x + 290, y + 30);
-            guiGraphics.drawString(this.font, playerTitaniumCount + " / " + requiredAmount, x + 310, y + 34, countColor, false); 
-            guiGraphics.drawString(this.font, "Titanium Ingot", x + 290, y + 55, 0xFFAAAAAA, false);
+            for (ItemStack ingredient : recipe) {
+                int playerHas = countItem(ingredient.getItem());
+                int required = ingredient.getCount();
+                int countColor = (playerHas >= required) ? 0xFF55FF55 : 0xFFFF5555;
+                
+                if (playerHas < required) canCraft = false;
+
+                guiGraphics.renderItem(ingredient, x + 290, ingY);
+                guiGraphics.drawString(this.font, playerHas + " / " + required, x + 312, ingY + 4, countColor, false); 
+                
+                ingY += 22; // Move down for next ingredient
+            }
+
+            // Button is greyed out if you don't have the materials!
+            this.craftButton.active = canCraft; 
         }
         
         // ==========================================
         // MODE 1: POWER INJECTION
         // ==========================================
         else if (mainMode == 1) {
-            
             for (int s = 0; s < 2; s++) {
                 int subTabX = x + 182; 
                 int subTabY = y + 20 + (s * 35);
@@ -276,7 +321,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
 
                 int power = equippedChest.getOrCreateTag().getInt("RigPower");
                 
-                // ✅ BUTTON ONLY ACTIVE IF: Power < 100 AND Battery Selected AND Player Owns Battery
                 boolean playerOwnsSelectedBattery = false;
                 if (selectedBatteryIndex != -1) {
                     playerOwnsSelectedBattery = countItem(batteryList[selectedBatteryIndex].getItem()) > 0;
@@ -332,7 +376,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
                         if (bName.length() > 14) bName = bName.substring(0, 14) + "...";
                         guiGraphics.drawString(this.font, bName, listX + 28, rowY + 9, 0xFFFFFF, false);
                         
-                        // 🔥 NEW: DISPLAY INVENTORY COUNT & POWER AMOUNT!
                         int ownedCount = countItem(currentBattery.getItem());
                         int countColor = (ownedCount > 0) ? 0xFF55FF55 : 0xFFFF5555;
                         guiGraphics.drawString(this.font, "Own: " + ownedCount, listX + 28, rowY + 21, countColor, false);

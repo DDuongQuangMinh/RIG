@@ -27,8 +27,8 @@ public class CycleVisionModePacket {
                     int currentMode = helmet.getOrCreateTag().getInt("VisionMode");
                     int nextMode;
                     
-                    if (armor.getArmorLevel() == 2) {
-                        // Level 2 Helmet: Simple Thermal toggle (0 or 1)
+                    // Applies the 0/1 toggle to BOTH Level 2 and Level 3
+                    if (armor.getArmorLevel() >= 2) {
                         nextMode = (currentMode == 0) ? 1 : 0;
                     } else {
                         // Level 1 Helmet: Cycle through 0, 1, 2, 3
@@ -39,6 +39,8 @@ public class CycleVisionModePacket {
                 }
             }
         });
+        
+        context.setPacketHandled(true);
         return true;
     }
 }

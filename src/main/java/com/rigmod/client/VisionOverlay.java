@@ -1,20 +1,33 @@
 package com.rigmod.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.rigmod.item.Custom3DArmorItem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 
+import java.util.Random;
+
 public class VisionOverlay {
+
+    private static final Random RANDOM = new Random();
+    private static double lastTemp = 20.0;
 
     public static final IGuiOverlay HUD_VISION = (gui, guiGraphics, partialTick, width, height) -> {
 
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
 
-        if (player == null) return;
+        if (player == null || mc.options.hideGui) return;
 
         ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
         if (!(helmet.getItem() instanceof Custom3DArmorItem armor)) return;
@@ -52,30 +65,92 @@ public class VisionOverlay {
             }
         } 
         
-        // --- LEVEL 2 HELMET LOGIC (Digital Engineering Thermal) ---
+        // --- LEVEL 2 HELMET LOGIC ---
         else if (armor.getArmorLevel() == 2) {
             if (mode > 0) {
-                // 1. Base Thermal Tint (Deep Purple/Blue)
                 guiGraphics.fill(0, 0, width, height, 0x770D001F);
-                
-                // 2. Scanline / Grid Effect
                 renderDigitalScanner(guiGraphics, width, height, mc.level.getGameTime());
-                
-                // 3. Digital Noise (Higher speed than Level 1)
                 renderNoiseLight(guiGraphics, width, height, false);
+            }
+        }
+        
+        // --- LEVEL 3 HELMET LOGIC ---
+        else if (armor.getArmorLevel() == 3) {
+            
+            // MODE 0: EXACT 1:1 COPY OF LEVEL 2 THERMAL DESIGN
+            if (mode == 0) {
+                RenderSystem.enableBlend();
+                guiGraphics.fill(0, 0, width, height, 0x770D001F);
+                renderDigitalScanner(guiGraphics, width, height, mc.level.getGameTime());
+                renderNoiseLight(guiGraphics, width, height, false);
+            }
+            
+            // MODE 1: HEAT VISION (Level 2 Design + Orange Tint + Celsius)
+            else if (mode == 1) {
+                RenderSystem.enableBlend();
+                guiGraphics.fill(0, 0, width, height, 0x33FF5500); 
+                
+                renderDigitalScanner(guiGraphics, width, height, mc.level.getGameTime());
+                renderNoiseLight(guiGraphics, width, height, false);
+
+                // Draw FLIR Crosshair
+                int cx = width / 2;
+                int cy = height / 2;
+
+                guiGraphics.fill(cx - 16, cy - 2, cx + 16, cy + 2, 0xFF000000);
+                guiGraphics.fill(cx - 2, cy - 16, cx + 2, cy + 16, 0xFF000000);
+                guiGraphics.fill(cx - 15, cy - 1, cx + 15, cy + 1, 0xFFFFFFFF);
+                guiGraphics.fill(cx - 1, cy - 15, cx + 1, cy + 15, 0xFFFFFFFF);
+                guiGraphics.fill(cx - 3, cy - 3, cx + 3, cy + 3, 0x88FFAA00);
+
+                // --- CALCULATE REAL-TIME TEMPERATURE ---
+                double targetTemp = 22.5;
+
+                if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.ENTITY) {
+                    targetTemp = 37.0 + (RANDOM.nextDouble() * 2.0); 
+                } else {
+                    HitResult blockHit = player.pick(100.0D, 0.0F, false);
+                    if (blockHit != null && blockHit.getType() == HitResult.Type.BLOCK) {
+                        BlockPos pos = ((BlockHitResult) blockHit).getBlockPos();
+                        BlockState state = mc.level.getBlockState(pos);
+
+                        // 🔥 THE FIX: Lowered extreme temperatures to look better on the UI!
+                        if (state.is(Blocks.LAVA)) targetTemp = 145.0 + RANDOM.nextDouble() * 15; 
+                        else if (state.is(Blocks.WATER)) targetTemp = 12.0 + RANDOM.nextDouble() * 3;
+                        else if (state.is(Blocks.FIRE) || state.is(Blocks.CAMPFIRE) || state.is(Blocks.MAGMA_BLOCK)) targetTemp = 95.0 + RANDOM.nextDouble() * 20;
+                        else if (state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK) || state.is(Blocks.ICE)) targetTemp = -5.0 + RANDOM.nextDouble() * 2;
+                        else {
+                            float biomeTemp = mc.level.getBiome(pos).value().getBaseTemperature();
+                            targetTemp = (biomeTemp * 25.0) + (mc.level.isDay() ? 5.0 : -5.0);
+                        }
+                    }
+                }
+
+                lastTemp += (targetTemp - lastTemp) * 0.1;
+                String tempText = String.format("%.1f \u00B0C", lastTemp);
+
+                PoseStack pose = guiGraphics.pose();
+                pose.pushPose();
+                pose.scale(1.5F, 1.5F, 1.5F); 
+
+                int textX = 10;
+                int textY = 10;
+                int boxWidth = mc.font.width(tempText) + 8;
+
+                guiGraphics.fill(textX - 4, textY - 4, textX + boxWidth - 4, textY + mc.font.lineHeight + 4, 0xAA000011);
+                guiGraphics.drawString(mc.font, tempText, textX, textY, 0xFFFFFFFF, false);
+
+                pose.popPose();
             }
         }
     };
 
     // =========================
-    // DIGITAL SCANNER EFFECT (Level 2 Only)
+    // HELPER METHODS 
     // =========================
-    private static void renderDigitalScanner(net.minecraft.client.gui.GuiGraphics g, int w, int h, long gameTime) {
-        // Horizontal Scanline
+    private static void renderDigitalScanner(GuiGraphics g, int w, int h, long gameTime) {
         int scanPos = (int) ((gameTime * 4) % h);
-        g.fill(0, scanPos, w, scanPos + 1, 0x3300FFCC); // Cyan scanline
-        
-        // Faint Digital Grid
+        g.fill(0, scanPos, w, scanPos + 1, 0x3300FFCC);
         int gridSize = 40;
         for (int i = 0; i < w; i += gridSize) {
             g.fill(i, 0, i + 1, h, 0x1100FFCC);
@@ -85,7 +160,7 @@ public class VisionOverlay {
         }
     }
 
-    private static void renderVignetteLight(net.minecraft.client.gui.GuiGraphics g, int w, int h) {
+    private static void renderVignetteLight(GuiGraphics g, int w, int h) {
         int edge = 120;
         g.fill(0, 0, w, edge, 0x11000000);
         g.fill(0, h - edge, w, h, 0x11000000);
@@ -93,7 +168,7 @@ public class VisionOverlay {
         g.fill(w - edge, 0, w, h, 0x11000000);
     }
 
-    private static void renderNoiseLight(net.minecraft.client.gui.GuiGraphics g, int w, int h, boolean greenMode) {
+    private static void renderNoiseLight(GuiGraphics g, int w, int h, boolean greenMode) {
         long time = System.currentTimeMillis() / 40;
         int step = 6;
         for (int x = 0; x < w; x += step) {

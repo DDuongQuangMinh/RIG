@@ -5,7 +5,8 @@ import com.google.common.collect.Multimap;
 import com.rigmod.RigMod;
 import com.rigmod.client.Level2HelmetModel;
 import com.rigmod.client.Level2ChestplateModel; 
-import com.rigmod.client.model.StandardLevel1ChestModel; // Updated to match your new model folder!
+import com.rigmod.client.model.StandardLevel1ChestModel;
+import com.rigmod.client.model.EngineeringLevel3HelmetModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
 import net.minecraft.client.Minecraft;
@@ -25,6 +26,8 @@ import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
 
@@ -59,9 +62,7 @@ public class Custom3DArmorItem extends ArmorItem {
                 builder.putAll(super.getDefaultAttributeModifiers(slot));
 
                 if (this.getType() == Type.CHESTPLATE) {
-                    // CHECK ARMOR LEVEL: Level 2 gives 20.0 health (+10 hearts). Level 1 gives 8.0 health (+4 hearts).
                     double healthBoost = (this.armorLevel == 2) ? 20.0D : 8.0D;
-                    
                     builder.put(Attributes.MAX_HEALTH, new AttributeModifier(
                             HEALTH_MODIFIER_UUID, "Chestplate health boost", healthBoost, AttributeModifier.Operation.ADDITION));
                 }
@@ -132,6 +133,64 @@ public class Custom3DArmorItem extends ArmorItem {
                         }
                     }
                 }
+                
+                int radarMode = tag.getInt("RadarMode");
+                if (radarMode > 0 && player.tickCount % 20 == 0) {
+                    AABB radarBox = player.getBoundingBox().inflate(200.0D); 
+                    int entityCount = 0;
+                    int playerCount = 0;
+
+                    if (radarMode == 1 || radarMode == 3) {
+                        List<LivingEntity> mobs = level.getEntitiesOfClass(LivingEntity.class, radarBox, e -> e != player && !(e instanceof Player));
+                        entityCount = mobs.size();
+                    }
+                    if (radarMode == 2 || radarMode == 3) {
+                        List<Player> players = level.getEntitiesOfClass(Player.class, radarBox, e -> e != player);
+                        playerCount = players.size();
+                    }
+
+                    String radarMsg = "§a[RADAR] ";
+                    if (radarMode == 1) radarMsg += "Scanning Mobs (" + entityCount + " detected)";
+                    else if (radarMode == 2) radarMsg += "Scanning Players (" + playerCount + " detected)";
+                    else if (radarMode == 3) radarMsg += "Scanning All (Mobs: " + entityCount + " | Players: " + playerCount + ")";
+
+                    player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
+                }
+            }
+            // 🔥 LEVEL 3 LOGIC 🔥
+            else if (this.armorLevel == 3) {
+                
+                // THE FIX: Night Vision is FORCED ON for Level 3!
+                // This guarantees the world is fully lit so the tint never blinds you in the dark.
+                MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
+                if (currentNV == null || currentNV.getDuration() <= 200) {
+                    player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
+                }
+                
+                Scoreboard scoreboard = level.getScoreboard();
+                PlayerTeam redTeam = scoreboard.getPlayerTeam("RigThermalRed");
+                if (redTeam == null) {
+                    redTeam = scoreboard.addPlayerTeam("RigThermalRed");
+                    redTeam.setColor(net.minecraft.ChatFormatting.RED);
+                }
+
+                AABB box = player.getBoundingBox().inflate(40.0D);
+                List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
+
+                for (LivingEntity target : entities) {
+                    MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
+                    if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
+                        target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                    }
+                    
+                    if (visionMode == 1) {
+                        scoreboard.addPlayerToTeam(target.getScoreboardName(), redTeam);
+                    } else {
+                        if (scoreboard.getPlayersTeam(target.getScoreboardName()) != null && scoreboard.getPlayersTeam(target.getScoreboardName()).getName().equals("RigThermalRed")) {
+                            scoreboard.removePlayerFromTeam(target.getScoreboardName(), redTeam);
+                        }
+                    }
+                }
 
                 int radarMode = tag.getInt("RadarMode");
                 if (radarMode > 0 && player.tickCount % 20 == 0) {
@@ -173,11 +232,17 @@ public class Custom3DArmorItem extends ArmorItem {
             @Override
             public @NotNull HumanoidModel<?> getHumanoidArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlot armorSlot, HumanoidModel<?> _default) {
                 if (armorSlot == EquipmentSlot.HEAD) {
-                    if (Custom3DArmorItem.this.armorLevel == 2) {
+                    if (Custom3DArmorItem.this.armorLevel == 3) {
+                        EngineeringLevel3HelmetModel<?> customModel3 = new EngineeringLevel3HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3HelmetModel.LAYER_LOCATION));
+                        customModel3.young = _default.young; customModel3.crouching = _default.crouching; customModel3.riding = _default.riding; customModel3.rightArmPose = _default.rightArmPose; customModel3.leftArmPose = _default.leftArmPose;
+                        return customModel3;
+                    } 
+                    else if (Custom3DArmorItem.this.armorLevel == 2) {
                         Level2HelmetModel<?> customModel2 = new Level2HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2HelmetModel.LAYER_LOCATION));
                         customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
                         return customModel2;
-                    } else {
+                    } 
+                    else {
                         StandardLevel1HelmetModel<?> customModel1 = new StandardLevel1HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1HelmetModel.LAYER_LOCATION));
                         customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
                         return customModel1;
@@ -190,16 +255,8 @@ public class Custom3DArmorItem extends ArmorItem {
                         customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
                         return customModel2;
                     } else {
-                        // THE FIX: Directly bakes the new Level 1 Chestplate model without needing LAYER_LOCATION
                         StandardLevel1ChestModel<?> customModel1 = new StandardLevel1ChestModel<>(StandardLevel1ChestModel.createBodyLayer().bakeRoot());
-                        
-                        // Your brilliant posture-syncing logic remains perfectly intact
-                        customModel1.young = _default.young; 
-                        customModel1.crouching = _default.crouching; 
-                        customModel1.riding = _default.riding; 
-                        customModel1.rightArmPose = _default.rightArmPose; 
-                        customModel1.leftArmPose = _default.leftArmPose;
-                        
+                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
                         return customModel1;
                     }
                 }

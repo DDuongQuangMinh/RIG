@@ -3,6 +3,7 @@ package com.rigmod;
 import com.mojang.logging.LogUtils;
 import com.rigmod.client.Level2HelmetModel;
 import com.rigmod.client.Level2ChestplateModel;
+import com.rigmod.client.model.EngineeringLevel3HelmetModel;
 import com.rigmod.client.model.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
@@ -103,6 +104,7 @@ public class RigMod {
             event.registerLayerDefinition(StandardLevel1LeggingsModel.LAYER_LOCATION, StandardLevel1LeggingsModel::createBodyLayer);
             event.registerLayerDefinition(Level2HelmetModel.LAYER_LOCATION, Level2HelmetModel::createBodyLayer);
             event.registerLayerDefinition(Level2ChestplateModel.LAYER_LOCATION, Level2ChestplateModel::createBodyLayer);
+            event.registerLayerDefinition(EngineeringLevel3HelmetModel.LAYER_LOCATION, EngineeringLevel3HelmetModel::createBodyLayer);
             event.registerLayerDefinition(RigWorkbenchModel.LAYER_LOCATION, RigWorkbenchModel::createBodyLayer);
 
             // ⚠️ REQUIRED FOR YOUR ARM MODEL

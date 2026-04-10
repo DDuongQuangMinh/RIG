@@ -7,7 +7,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -37,62 +40,197 @@ public class CraftArmorPacket {
             ServerPlayer player = context.getSender();
             if (player == null) return;
 
-            int requiredAmount = 8; 
-            int titaniumCount = 0;
+            // 1. Identify which item the player clicked based on Tab and Index
+            Item targetItem = null;
+            
+            if (tab == 0) { // HELMETS
+                if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_3_HELMET.get();
+                else if (index == 1) targetItem = ModItems.ENGINEERING_LEVEL_2_HELMET.get();
+                else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_HELMET.get();
+            } 
+            else if (tab == 1) { // CHESTPLATES
+                if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get();
+                else if (index == 1) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get();
+                else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get();
+            } 
+            else if (tab == 2) { // LEGGINGS
+                if (index == 0) targetItem = ModItems.STANDARD_LEVEL_1_LEGGINGS.get();
+            }
+            else if (tab == 3) { // BATTERIES
+                if (index == 0) targetItem = ModItems.BATTERY_LEVEL_1.get();
+                else if (index == 1) targetItem = ModItems.BATTERY_LEVEL_2.get();
+                else if (index == 2) targetItem = ModItems.BATTERY_LEVEL_3.get();
+                else if (index == 3) targetItem = ModItems.BATTERY_LEVEL_4.get();
+                else if (index == 4) targetItem = ModItems.BATTERY_LEVEL_5.get();
+                else if (index == 5) targetItem = ModItems.BATTERY_LEVEL_6.get();
+                else if (index == 6) targetItem = ModItems.BATTERY_LEVEL_7.get();
+            }
 
-            // 1. Double-check the player's inventory on the Server side
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = player.getInventory().getItem(i);
-                if (stack.getItem() == ModItems.TITANIUM_INGOT.get()) {
-                    titaniumCount += stack.getCount();
+            if (targetItem == null) return;
+
+            boolean canCraft = false;
+
+            // ==========================================
+            // 2. RECIPE LOGIC (Check and Consume Ingredients)
+            // ==========================================
+            
+            // --- HELMETS ---
+            if (targetItem.equals(ModItems.STANDARD_LEVEL_1_HELMET.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 5) && hasItem(player, ModItems.BATTERY_LEVEL_1.get(), 2) && hasItem(player, Items.ENDER_EYE, 1)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 5);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_1.get(), 2);
+                    consumeItem(player, Items.ENDER_EYE, 1);
+                    canCraft = true;
+                }
+            } 
+            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_2_HELMET.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 7) && hasItem(player, ModItems.BATTERY_LEVEL_2.get(), 2) && hasItem(player, Items.ENDER_EYE, 3)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 7);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_2.get(), 2);
+                    consumeItem(player, Items.ENDER_EYE, 3);
+                    canCraft = true;
+                }
+            }
+            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_3_HELMET.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 10) && hasItem(player, ModItems.BATTERY_LEVEL_3.get(), 1) && hasItem(player, Items.BLAZE_ROD, 5) && hasItem(player, Items.NETHERITE_INGOT, 3)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 10);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_3.get(), 1);
+                    consumeItem(player, Items.BLAZE_ROD, 5);
+                    consumeItem(player, Items.NETHERITE_INGOT, 3);
+                    canCraft = true;
+                }
+            }
+            // --- CHESTPLATES ---
+            else if (targetItem.equals(ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 5) && hasItem(player, Items.COPPER_INGOT, 7) && hasItem(player, Items.REDSTONE, 5) && hasItem(player, Items.QUARTZ, 5)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 5);
+                    consumeItem(player, Items.COPPER_INGOT, 7);
+                    consumeItem(player, Items.REDSTONE, 5);
+                    consumeItem(player, Items.QUARTZ, 5);
+                    canCraft = true;
+                }
+            }
+            else if (targetItem.equals(ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 5) && hasItem(player, Items.QUARTZ, 12) && hasItem(player, Items.REDSTONE, 7) && hasItem(player, Items.DIAMOND, 3)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 5);
+                    consumeItem(player, Items.QUARTZ, 12);
+                    consumeItem(player, Items.REDSTONE, 7);
+                    consumeItem(player, Items.DIAMOND, 3);
+                    canCraft = true;
+                }
+            }
+            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 10) && hasItem(player, Items.QUARTZ, 28) && hasItem(player, ModItems.BATTERY_LEVEL_5.get(), 5) && hasItem(player, Items.DIAMOND, 12) && hasItem(player, Items.NETHERITE_INGOT, 3)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 10);
+                    consumeItem(player, Items.QUARTZ, 28);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_5.get(), 5);
+                    consumeItem(player, Items.DIAMOND, 12);
+                    consumeItem(player, Items.NETHERITE_INGOT, 3);
+                    canCraft = true;
+                }
+            }
+            // --- LEGGINGS ---
+            else if (targetItem.equals(ModItems.STANDARD_LEVEL_1_LEGGINGS.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 4) && hasItem(player, Items.BLACK_DYE, 3) && hasItem(player, Items.QUARTZ, 6)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 4);
+                    consumeItem(player, Items.BLACK_DYE, 3);
+                    consumeItem(player, Items.QUARTZ, 6);
+                    canCraft = true;
+                }
+            }
+            // --- BATTERIES ---
+            else if (targetItem.equals(ModItems.BATTERY_LEVEL_1.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 1) && hasItem(player, Items.REDSTONE, 4)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 1); consumeItem(player, Items.REDSTONE, 4); canCraft = true;
+                }
+            } else if (targetItem.equals(ModItems.BATTERY_LEVEL_2.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 2) && hasItem(player, Items.REDSTONE, 8)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 2); consumeItem(player, Items.REDSTONE, 8); canCraft = true;
+                }
+            } else if (targetItem.equals(ModItems.BATTERY_LEVEL_3.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 3) && hasItem(player, Items.REDSTONE, 12)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 3); consumeItem(player, Items.REDSTONE, 12); canCraft = true;
+                }
+            } else if (targetItem.equals(ModItems.BATTERY_LEVEL_4.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 4) && hasItem(player, Items.REDSTONE, 16) && hasItem(player, Items.QUARTZ, 1)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 4); consumeItem(player, Items.REDSTONE, 16); consumeItem(player, Items.QUARTZ, 1); canCraft = true;
+                }
+            } else if (targetItem.equals(ModItems.BATTERY_LEVEL_5.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 5) && hasItem(player, Items.REDSTONE, 20) && hasItem(player, Items.QUARTZ, 2)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 5); consumeItem(player, Items.REDSTONE, 20); consumeItem(player, Items.QUARTZ, 2); canCraft = true;
+                }
+            } else if (targetItem.equals(ModItems.BATTERY_LEVEL_6.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 6) && hasItem(player, Items.REDSTONE, 24) && hasItem(player, Items.QUARTZ, 3)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 6); consumeItem(player, Items.REDSTONE, 24); consumeItem(player, Items.QUARTZ, 3); canCraft = true;
+                }
+            } else if (targetItem.equals(ModItems.BATTERY_LEVEL_7.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 7) && hasItem(player, Items.REDSTONE, 28) && hasItem(player, Items.QUARTZ, 4)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 7); consumeItem(player, Items.REDSTONE, 28); consumeItem(player, Items.QUARTZ, 4); canCraft = true;
                 }
             }
 
-            // 2. If they have enough, consume the Titanium!
-            if (titaniumCount >= requiredAmount) {
-                int removed = 0;
-                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                    ItemStack stack = player.getInventory().getItem(i);
-                    if (stack.getItem() == ModItems.TITANIUM_INGOT.get()) {
-                        int toRemove = Math.min(stack.getCount(), requiredAmount - removed);
-                        stack.shrink(toRemove);
-                        removed += toRemove;
-                        if (removed >= requiredAmount) break;
-                    }
+            // ==========================================
+            // 3. REWARD & FEEDBACK
+            // ==========================================
+            if (canCraft) {
+                ItemStack itemToGive = new ItemStack(targetItem);
+                
+                // Hand over the crafted item
+                if (!player.getInventory().add(itemToGive)) {
+                    player.drop(itemToGive, false); // Drops on ground if inventory is full
                 }
 
-                // 3. Select the correct Armor based on what they clicked in the UI
-                ItemStack itemToGive = ItemStack.EMPTY;
-                if (tab == 0) {
-                    if (index == 0) itemToGive = new ItemStack(ModItems.ENGINEERING_LEVEL_2_HELMET.get());
-                    else if (index == 1) itemToGive = new ItemStack(ModItems.STANDARD_LEVEL_1_HELMET.get());
-                } else if (tab == 1) {
-                    if (index == 0) itemToGive = new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get());
-                    else if (index == 1) itemToGive = new ItemStack(ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get());
-                    else if (index == 2) itemToGive = new ItemStack(ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get());
-                } else if (tab == 2) {
-                    if (index == 0) itemToGive = new ItemStack(ModItems.STANDARD_LEVEL_1_LEGGINGS.get());
-                }
+                // 🔥 FORCE INVENTORY SYNC: Prevents ghost items!
+                player.containerMenu.broadcastChanges();
 
-                // 4. Give the Armor AND play the feedback!
-                if (!itemToGive.isEmpty()) {
-                    // Hand over the item
-                    if (!player.getInventory().add(itemToGive)) {
-                        player.drop(itemToGive, false); // Drops on ground if inventory is full
-                    }
-
-                    // NEW: Play a heavy mechanical Smithing sound!
-                    player.level().playSound(null, player.blockPosition(), SoundEvents.SMITHING_TABLE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-                    
-                    // NEW: Spawn a burst of electric sparks around the Workbench!
-                    if (player.level() instanceof ServerLevel serverLevel) {
-                        serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK, 
-                            player.getX(), player.getY() + 1.0, player.getZ(), 
-                            15, 0.5, 0.5, 0.5, 0.1);
-                    }
+                // Play Smithing sound
+                player.level().playSound(null, player.blockPosition(), SoundEvents.SMITHING_TABLE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+                
+                // Spawn electric sparks around the Workbench
+                if (player.level() instanceof ServerLevel serverLevel) {
+                    serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK, 
+                        player.getX(), player.getY() + 1.0, player.getZ(), 
+                        15, 0.5, 0.5, 0.5, 0.1);
                 }
             }
         });
+        
+        // 🔥 CRITICAL: Tells the server this packet was processed successfully so it doesn't get dropped!
+        context.setPacketHandled(true); 
         return true;
+    }
+
+    // ==========================================
+    // INVENTORY HELPER METHODS
+    // ==========================================
+
+    private boolean hasItem(Player player, Item item, int requiredAmount) {
+        int count = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.getItem().equals(item)) {
+                count += stack.getCount();
+            }
+        }
+        return count >= requiredAmount;
+    }
+
+    private void consumeItem(Player player, Item item, int amountToConsume) {
+        int remaining = amountToConsume;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.getItem().equals(item)) {
+                int toTake = Math.min(stack.getCount(), remaining);
+                stack.shrink(toTake);
+                
+                // 🔥 SAFE CLEAR: explicitly tells the game the slot is empty if it hits 0!
+                if (stack.isEmpty()) {
+                    player.getInventory().setItem(i, ItemStack.EMPTY);
+                }
+                
+                remaining -= toTake;
+                if (remaining <= 0) break;
+            }
+        }
     }
 }
