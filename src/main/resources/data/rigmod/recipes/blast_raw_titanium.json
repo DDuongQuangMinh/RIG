@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:blasting",
+  "ingredient": {
+    "item": "rigmod:raw_titanium"
+  },
+  "result": "rigmod:titanium_ingot",
+  "experience": 3.0,
+  "cookingtime": 400
+}

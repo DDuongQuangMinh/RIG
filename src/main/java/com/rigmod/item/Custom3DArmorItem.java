@@ -54,12 +54,33 @@ public class Custom3DArmorItem extends ArmorItem {
         return this.armorLevel;
     }
 
+    // 🔥 NEW: Makes the Level 3 Helmet immune to burning in lava (like Netherite!)
+    @Override
+    public boolean isFireResistant() {
+        return this.armorLevel == 3 || super.isFireResistant();
+    }
+
     @Override
     public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
         if (slot == this.getType().getSlot()) {
             if (this.customModifiers == null) {
                 ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
-                builder.putAll(super.getDefaultAttributeModifiers(slot));
+                
+                // 🔥 THE NETHERITE 1.5x UPGRADE 🔥
+                if (this.getType() == Type.HELMET && this.armorLevel == 3) {
+                    // We completely bypass the default material and hardcode the 1.5x stats!
+                    // Vanilla Netherite Helmet: Armor 3.0 | Toughness 3.0 | KB Resist 0.1
+                    // Level 3 Helmet (x1.5): Armor 4.5 | Toughness 4.5 | KB Resist 0.15
+                    builder.put(Attributes.ARMOR, new AttributeModifier(
+                            UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150"), "Armor modifier", 4.5D, AttributeModifier.Operation.ADDITION));
+                    builder.put(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(
+                            UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB151"), "Armor toughness", 4.5D, AttributeModifier.Operation.ADDITION));
+                    builder.put(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(
+                            UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB152"), "Armor knockback resistance", 0.15D, AttributeModifier.Operation.ADDITION));
+                } else {
+                    // Level 1 and 2 just use their normal material stats
+                    builder.putAll(super.getDefaultAttributeModifiers(slot));
+                }
 
                 if (this.getType() == Type.CHESTPLATE) {
                     double healthBoost = (this.armorLevel == 2) ? 20.0D : 8.0D;
@@ -160,8 +181,6 @@ public class Custom3DArmorItem extends ArmorItem {
             // 🔥 LEVEL 3 LOGIC 🔥
             else if (this.armorLevel == 3) {
                 
-                // THE FIX: Night Vision is FORCED ON for Level 3!
-                // This guarantees the world is fully lit so the tint never blinds you in the dark.
                 MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
                 if (currentNV == null || currentNV.getDuration() <= 200) {
                     player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
