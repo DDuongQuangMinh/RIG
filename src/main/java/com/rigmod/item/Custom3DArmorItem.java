@@ -358,9 +358,17 @@ public class Custom3DArmorItem extends ArmorItem {
                 }
 
                 if (armorSlot == EquipmentSlot.LEGS) {
-                    StandardLevel1LeggingsModel<?> customModel = new StandardLevel1LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
-                    customModel.young = _default.young; customModel.crouching = _default.crouching; customModel.riding = _default.riding; customModel.rightArmPose = _default.rightArmPose; customModel.leftArmPose = _default.leftArmPose;
-                    return customModel;
+                    if (Custom3DArmorItem.this.armorLevel == 2) {
+                        com.rigmod.client.model.Level2LeggingsModel<?> customModel2 = new com.rigmod.client.model.Level2LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(com.rigmod.client.model.Level2LeggingsModel.LAYER_LOCATION));
+                        customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
+                        return customModel2;
+                    } 
+                    
+                    else {
+                        StandardLevel1LeggingsModel<?> customModel1 = new StandardLevel1LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
+                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
+                        return customModel1;
+                    }
                 }
                 return _default;
             }

@@ -23,7 +23,7 @@ import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.block.ModBlocks;
 import com.rigmod.blockentity.ModBlockEntities;
 import com.rigmod.menu.ModMenuTypes;
-import com.rigmod.event.ArmorFlightHandler;
+import com.rigmod.event.ArmorFlightHandler; 
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -112,7 +112,14 @@ public class RigMod {
 
                     if (power > 0) {
                         event.setCanceled(true); 
-                        chest.getOrCreateTag().putInt("RigPower", power - 1); 
+                        
+                        int hits = chest.getOrCreateTag().getInt("AbsorbedHits") + 1;
+                        if (hits >= 20) {
+                            chest.getOrCreateTag().putInt("RigPower", power - 1); 
+                            chest.getOrCreateTag().putInt("AbsorbedHits", 0); 
+                        } else {
+                            chest.getOrCreateTag().putInt("AbsorbedHits", hits);
+                        }
                         
                         if (!player.level().isClientSide()) {
                             player.level().playSound(null, player.blockPosition(), net.minecraft.sounds.SoundEvents.RESPAWN_ANCHOR_DEPLETE.get(), net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 2.0F);
@@ -167,6 +174,7 @@ public class RigMod {
             event.registerLayerDefinition(EngineeringLevel3ChestplateModel.LAYER_LOCATION, EngineeringLevel3ChestplateModel::createBodyLayer);
             event.registerLayerDefinition(RigWorkbenchModel.LAYER_LOCATION, RigWorkbenchModel::createBodyLayer);
             event.registerLayerDefinition(StandardLevel1ChestModel.LAYER_LOCATION, StandardLevel1ChestModel::createBodyLayer);
+            event.registerLayerDefinition(com.rigmod.client.model.Level2LeggingsModel.LAYER_LOCATION, com.rigmod.client.model.Level2LeggingsModel::createBodyLayer);
         }
 
         @SubscribeEvent
@@ -200,6 +208,7 @@ public class RigMod {
             }
         }
 
+        // 🔥 FIX: Completely deleted the forward pitch lean!
         @SubscribeEvent
         public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
             Player player = event.getEntity();
@@ -208,16 +217,13 @@ public class RigMod {
             if (chest.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2) {
                 if (!player.onGround() && chest.getOrCreateTag().getInt("RigPower") > 0) {
                     
-                    // Lock the body and head to camera to stop vanilla snap-back
-                    player.yBodyRot = player.getYRot();
-                    player.yHeadRot = player.getYRot();
+                    player.yBodyRot = player.yHeadRot;
+                    player.yBodyRotO = player.yHeadRotO;
                     
                     event.getPoseStack().pushPose();
+                    event.getPoseStack().translate(0.0D, 1.0D, 0.0D); 
 
-                    // Pivot from the center of the chest area
-                    event.getPoseStack().translate(0.0D, 1.0D, 0.0D);
-
-                    // 🔥 ONLY APPLY THE ROLL (Z-axis tilt) from the Z/C keys. All W/A/S/D pitch math removed!
+                    // Only apply Z-Axis Roll
                     if (ArmorFlightHandler.currentRoll != 0.0F) {
                         event.getPoseStack().mulPose(new org.joml.Quaternionf().fromAxisAngleDeg(new org.joml.Vector3f(0.0f, 0.0f, 1.0f), ArmorFlightHandler.currentRoll));
                     }
@@ -259,7 +265,7 @@ public class RigMod {
             Minecraft mc = Minecraft.getInstance();
             if (mc.player != null) {
                 if (ArmorFlightHandler.isFlying) {
-                    float rollSpeed = 2.5F; 
+                    float rollSpeed = 3.5F; 
                     if (KeyBindings.ROTATE_LEFT_KEY.isDown()) {
                         ArmorFlightHandler.currentRoll += rollSpeed; 
                     }

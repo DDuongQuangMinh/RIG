@@ -17,11 +17,12 @@
   "item.rigmod.engineering_level_2_chestplate": "Engineering Chestplate Level 2",
   "item.rigmod.engineering_level_3_chestplate": "Engineering Chestplate Level 3",
   "item.rigmod.standard_level_1_legging": "Leggings Level 1",
+  "item.rigmod.engineering_level_2_leggings": "Leggings Level 2",
   "block.rigmod.rig_workbench": "RIG Workbench",
   "creativetab.rig_tab": "RIG Suit Tech",
   "key.category.rigmod": "RIG Mod Controls",
   "key.rigmod.cycle_vision": "Toggle RIG Visor",
   "key.rigmod.cycle_radar": "Cycle Radar Mode",
-  "key.rigmod.rotate_left": "Yaw Left",
-  "key.rigmod.rotate_right": "Yaw Right"
+  "key.rigmod.rotate_left": "Yaw Right",
+  "key.rigmod.rotate_right": "Yaw Left"
 }

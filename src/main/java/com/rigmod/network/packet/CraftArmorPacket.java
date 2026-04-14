@@ -48,14 +48,15 @@ public class CraftArmorPacket {
                 else if (index == 1) targetItem = ModItems.ENGINEERING_LEVEL_2_HELMET.get();
                 else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_HELMET.get();
             } 
-            else if (tab == 1) { // CHESTPLATES (🔥 UPDATED INDEXES)
-                if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get(); // NEW Level 3 Chest
+            else if (tab == 1) { // CHESTPLATES
+                if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get();
                 else if (index == 1) targetItem = ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get();
                 else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get();
                 else if (index == 3) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get();
             } 
             else if (tab == 2) { // LEGGINGS
                 if (index == 0) targetItem = ModItems.STANDARD_LEVEL_1_LEGGINGS.get();
+                else if (index == 1) targetItem = ModItems.ENGINEERING_LEVEL_2_LEGGINGS.get();
             }
             else if (tab == 3) { // BATTERIES
                 if (index == 0) targetItem = ModItems.BATTERY_LEVEL_1.get();
@@ -103,13 +104,21 @@ public class CraftArmorPacket {
             }
             
             // --- CHESTPLATES ---
-            // 🔥 NEW: Level 3 Chestplate Recipe Consumption
+            // 🔥 UPDATED: Level 3 Chestplate Recipe Consumption
             else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get())) {
-                if (hasItem(player, ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get(), 1) && hasItem(player, ModItems.TITANIUM_INGOT.get(), 12) && hasItem(player, ModItems.BATTERY_LEVEL_4.get(), 1) && hasItem(player, Items.NETHERITE_INGOT, 4)) {
+                if (hasItem(player, ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get(), 1) && 
+                    hasItem(player, Items.NETHERITE_INGOT, 8) && 
+                    hasItem(player, ModItems.BATTERY_LEVEL_4.get(), 4) && 
+                    hasItem(player, Items.DIAMOND, 12) && 
+                    hasItem(player, Items.IRON_INGOT, 24) && 
+                    hasItem(player, Items.BLAZE_ROD, 5)) {
+                    
                     consumeItem(player, ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get(), 1);
-                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 12);
-                    consumeItem(player, ModItems.BATTERY_LEVEL_4.get(), 1);
-                    consumeItem(player, Items.NETHERITE_INGOT, 4);
+                    consumeItem(player, Items.NETHERITE_INGOT, 8);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_4.get(), 4);
+                    consumeItem(player, Items.DIAMOND, 12);
+                    consumeItem(player, Items.IRON_INGOT, 24);
+                    consumeItem(player, Items.BLAZE_ROD, 5);
                     canCraft = true;
                 }
             }
@@ -148,6 +157,21 @@ public class CraftArmorPacket {
                     consumeItem(player, ModItems.TITANIUM_INGOT.get(), 4);
                     consumeItem(player, Items.BLACK_DYE, 3);
                     consumeItem(player, Items.QUARTZ, 6);
+                    canCraft = true;
+                }
+            }
+            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_2_LEGGINGS.get())) {
+                if (hasItem(player, ModItems.STANDARD_LEVEL_1_LEGGINGS.get(), 1) && 
+                    hasItem(player, Items.QUARTZ, 12) && 
+                    hasItem(player, ModItems.BATTERY_LEVEL_2.get(), 2) && 
+                    hasItem(player, Items.DIAMOND, 5) && 
+                    hasItem(player, Items.IRON_INGOT, 12)) {
+                    
+                    consumeItem(player, ModItems.STANDARD_LEVEL_1_LEGGINGS.get(), 1);
+                    consumeItem(player, Items.QUARTZ, 12);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_2.get(), 2);
+                    consumeItem(player, Items.DIAMOND, 5);
+                    consumeItem(player, Items.IRON_INGOT, 12);
                     canCraft = true;
                 }
             }

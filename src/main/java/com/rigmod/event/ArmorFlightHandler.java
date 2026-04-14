@@ -15,14 +15,13 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Vector3f;
+import org.joml.Quaternionf;
 
 @Mod.EventBusSubscriber(modid = RigMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ArmorFlightHandler {
 
-    // Global toggles and state variables
     public static boolean isStableMode = false;
-    
-    // 🔥 NEW: Tracks the exact tilt angle of the player's perspective
     public static float currentRoll = 0.0f;
     public static boolean isFlying = false;
 
@@ -46,45 +45,42 @@ public class ArmorFlightHandler {
                     }
                     int currentFuel = tag.getInt("RigPower");
 
-                    // ⛔ DISABLE VANILLA CREATIVE FLIGHT (To allow our custom physics)
                     if (player.getAbilities().mayfly) {
                         player.getAbilities().mayfly = false;
                         player.getAbilities().flying = false;
                         player.onUpdateAbilities();
                     }
 
-                    // 🚀 ASTRONAUT MODE (Powered standing flight)
                     if (currentFuel > 0 && !player.onGround()) {
                         
-                        // Set flight state for the camera and body locking
                         if (player.level().isClientSide()) {
                             isFlying = true;
                         }
 
-                        // 1. DRAIN FUEL
-                        int drainInterval = isLevel3 ? 60 : 20;
-                        if (player.tickCount % drainInterval == 0) {
+                        int flightTicks = tag.getInt("FlightTicks") + 1;
+                        if (flightTicks >= 12000) {
                             currentFuel--;
                             tag.putInt("RigPower", currentFuel);
+                            tag.putInt("FlightTicks", 0); 
 
                             if (currentFuel <= 0) {
                                 player.displayClientMessage(net.minecraft.network.chat.Component.literal("§c[WARNING] Suit Power Depleted! Gravity Restored."), true);
                             }
+                        } else {
+                            tag.putInt("FlightTicks", flightTicks); 
                         }
 
-                        // 2. APPLY PHYSICS (Client-Side Only)
                         if (player.level().isClientSide()) {
                             ClientPhysics.applyZeroG(player);
                         }
                     } else {
-                        // Reset flight state when landed
                         if (player.level().isClientSide()) {
                             isFlying = false; 
                         }
+                        tag.putInt("FlightTicks", 0); 
                     }
                 } 
                 else {
-                    // Not wearing flight armor, clean up state
                     if (player.level().isClientSide()) isFlying = false;
                     
                     if (player.getAbilities().mayfly) {
@@ -97,9 +93,6 @@ public class ArmorFlightHandler {
         }
     }
 
-    // ==========================================
-    // 🌌 ZERO-G CLIENT PHYSICS ENGINE 🌌
-    // ==========================================
     private static class ClientPhysics {
         public static void applyZeroG(Player player) {
             Minecraft mc = Minecraft.getInstance();
@@ -107,10 +100,12 @@ public class ArmorFlightHandler {
             
             if (localPlayer == null || player.getId() != localPlayer.getId()) return;
 
+            localPlayer.yBodyRot = localPlayer.yHeadRot;
+            localPlayer.yBodyRotO = localPlayer.yHeadRotO;
+
             Vec3 motion = localPlayer.getDeltaMovement();
             Vec3 look = localPlayer.getLookAngle();
             
-            // ANTI-GRAVITY: Counteracts the default downward pull
             double newY = motion.y + 0.075D; 
             double newX = motion.x;
             double newZ = motion.z;
@@ -118,64 +113,59 @@ public class ArmorFlightHandler {
             boolean isThrusting = false;
             double thrustPower = 0.02D; 
 
-            // Calculate precise Left/Right vectors based on Yaw for proper strafing
             float yaw = localPlayer.getYRot() * ((float)Math.PI / 180F);
             double rightX = -Math.cos(yaw);
             double rightZ = -Math.sin(yaw);
 
-            // MAIN THRUSTER CONTROLS
             if (mc.options.keyJump.isDown()) {
-                newY += thrustPower; // Up
+                newY += thrustPower; 
                 isThrusting = true;
             }
             if (mc.options.keyShift.isDown()) {
-                newY -= thrustPower; // Down
+                newY -= thrustPower; 
                 isThrusting = true;
             }
-            if (mc.options.keyUp.isDown()) { // W key
+            if (mc.options.keyUp.isDown()) { 
                 newX += look.x * thrustPower; 
                 newZ += look.z * thrustPower;
                 isThrusting = true;
             }
-            if (mc.options.keyDown.isDown()) { // S key
+            if (mc.options.keyDown.isDown()) { 
                 newX -= look.x * thrustPower; 
                 newZ -= look.z * thrustPower;
                 isThrusting = true;
             }
-            
-            // SIDEWAYS THRUSTER CONTROLS (A and D keys)
-            if (mc.options.keyLeft.isDown()) { // A key
+            if (mc.options.keyLeft.isDown()) { 
                 newX -= rightX * thrustPower;
                 newZ -= rightZ * thrustPower;
                 isThrusting = true;
             }
-            if (mc.options.keyRight.isDown()) { // D key
+            if (mc.options.keyRight.isDown()) { 
                 newX += rightX * thrustPower;
                 newZ += rightZ * thrustPower;
                 isThrusting = true;
             }
 
-            // STABLE MODE vs DRIFT MODE
+            if (KeyBindings.ROTATE_LEFT_KEY.isDown() || KeyBindings.ROTATE_RIGHT_KEY.isDown()) {
+                isThrusting = true;
+            }
+
             if (isStableMode) {
-                // STABLE: Strong friction for quick braking
                 if (!isThrusting) {
                     newX *= 0.80D; 
                     newZ *= 0.80D;
                 }
-                // STABLE: Altitude locking
                 if (!mc.options.keyJump.isDown() && !mc.options.keyShift.isDown()) {
                     newY = 0.0D; 
-                    isThrusting = true; // Visual Fix: Keeps flames spawning when hovering
+                    isThrusting = true; 
                 }
             } else {
-                // DRIFT: Minimal friction for endless momentum
                 if (!isThrusting) {
                     newX *= 0.98D;
                     newZ *= 0.98D;
                 }
             }
 
-            // MAX SPEED CAP
             double maxSpeedHorizontal = 0.5D; 
             double maxSpeedVertical = 0.4D;   
 
@@ -190,33 +180,33 @@ public class ArmorFlightHandler {
             }
         }
 
+        // 🔥 FIX: Cleaned up the math so flames only rotate sideways (Roll) and never pitch forward!
         private static void spawnAstronautParticles(Player player, RandomSource random) {
-            float bodyYaw = player.yBodyRot * ((float)Math.PI / 180F);
             
-            double backwardX = Math.sin(bodyYaw) * 0.35D; 
-            double backwardZ = -Math.cos(bodyYaw) * 0.35D; 
-            
-            double sideX = Math.cos(bodyYaw) * 0.20D;
-            double sideZ = Math.sin(bodyYaw) * 0.20D;
-            
-            double y = player.getY() + 1.25D; // Just behind the 3D pack thrusters
+            Quaternionf rollRot = new Quaternionf().fromAxisAngleDeg(new Vector3f(0, 0, 1), ArmorFlightHandler.currentRoll);
+            Quaternionf yawRot = new Quaternionf().fromAxisAngleDeg(new Vector3f(0, 1, 0), -player.yBodyRot);
 
-            double leftX = player.getX() + backwardX - sideX;
-            double leftZ = player.getZ() + backwardZ - sideZ;
-            
-            double rightX = player.getX() + backwardX + sideX;
-            double rightZ = player.getZ() + backwardZ + sideZ;
+            Vector3f leftBoot = new Vector3f(0.15f, -1.0f, 0.1f);
+            Vector3f rightBoot = new Vector3f(-0.15f, -1.0f, 0.1f);
+            Vector3f flameVel = new Vector3f(0.0f, -0.3f, 0.0f); 
 
-            double spreadX = (random.nextDouble() - 0.5D) * 0.1D;
-            double spreadZ = (random.nextDouble() - 0.5D) * 0.1D;
+            leftBoot.rotate(rollRot).rotate(yawRot);
+            rightBoot.rotate(rollRot).rotate(yawRot);
+            flameVel.rotate(rollRot).rotate(yawRot);
 
-            // Spawn Particles behind the pack
-            player.level().addParticle(ParticleTypes.SOUL_FIRE_FLAME, leftX + spreadX, y, leftZ + spreadZ, 0.0D, -0.15D, 0.0D);
-            player.level().addParticle(ParticleTypes.SOUL_FIRE_FLAME, rightX + spreadX, y, rightZ + spreadZ, 0.0D, -0.15D, 0.0D);
+            double pivotX = player.getX();
+            double pivotY = player.getY() + 1.0D; 
+            double pivotZ = player.getZ();
+
+            double spreadX = (random.nextDouble() - 0.5D) * 0.05D;
+            double spreadZ = (random.nextDouble() - 0.5D) * 0.05D;
+
+            player.level().addParticle(ParticleTypes.SOUL_FIRE_FLAME, pivotX + leftBoot.x() + spreadX, pivotY + leftBoot.y(), pivotZ + leftBoot.z() + spreadZ, flameVel.x(), flameVel.y(), flameVel.z());
+            player.level().addParticle(ParticleTypes.SOUL_FIRE_FLAME, pivotX + rightBoot.x() + spreadX, pivotY + rightBoot.y(), pivotZ + rightBoot.z() + spreadZ, flameVel.x(), flameVel.y(), flameVel.z());
             
             if (random.nextInt(2) == 0) { 
-                player.level().addParticle(ParticleTypes.SMOKE, leftX + spreadX, y, leftZ + spreadZ, 0.0D, -0.1D, 0.0D);
-                player.level().addParticle(ParticleTypes.SMOKE, rightX + spreadX, y, rightZ + spreadZ, 0.0D, -0.1D, 0.0D);
+                player.level().addParticle(ParticleTypes.SMOKE, pivotX + leftBoot.x() + spreadX, pivotY + leftBoot.y(), pivotZ + leftBoot.z() + spreadZ, flameVel.x() * 0.5, flameVel.y() * 0.5, flameVel.z() * 0.5);
+                player.level().addParticle(ParticleTypes.SMOKE, pivotX + rightBoot.x() + spreadX, pivotY + rightBoot.y(), pivotZ + rightBoot.z() + spreadZ, flameVel.x() * 0.5, flameVel.y() * 0.5, flameVel.z() * 0.5);
             }
         }
     }

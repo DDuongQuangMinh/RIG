@@ -55,13 +55,17 @@ public class ModItems {
     public static final RegistryObject<Item> ENGINEERING_LEVEL_2_CHESTPLATE = ITEMS.register("engineering_level_2_chestplate", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant(), "engineering_level_2_chestplate.png", 2));
 
+    // NEW: Engineering Level 2 Leggings
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_LEGGINGS = ITEMS.register("engineering_level_2_leggings", 
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant(), "engineering_level_2_leggings.png", 2));
+
     // --- LEVEL 3 ARMOR (Tier 3) ---
     
     // Engineering Level 3 Helmet
     public static final RegistryObject<Item> ENGINEERING_LEVEL_3_HELMET = ITEMS.register("engineering_level_3_helmet", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.HELMET, new Item.Properties().fireResistant(), "engineering_level_3_helmet.png", 3));
 
-    // 🔥 NEW: Engineering Level 3 Chestplate
+    // Engineering Level 3 Chestplate
     public static final RegistryObject<Item> ENGINEERING_LEVEL_3_CHESTPLATE = ITEMS.register("engineering_level_3_chestplate", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant(), "engineering_level_3_chestplate.png", 3));
 

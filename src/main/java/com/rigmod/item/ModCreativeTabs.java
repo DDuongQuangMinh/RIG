@@ -42,6 +42,7 @@ public class ModCreativeTabs {
                 
                 // Add leggings to the tab
                 output.accept(ModItems.STANDARD_LEVEL_1_LEGGINGS.get());
+                output.accept(ModItems.ENGINEERING_LEVEL_2_LEGGINGS.get());
             })
             .build());
 
