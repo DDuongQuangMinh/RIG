@@ -23,6 +23,7 @@ import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.block.ModBlocks;
 import com.rigmod.blockentity.ModBlockEntities;
 import com.rigmod.menu.ModMenuTypes;
+import com.rigmod.event.ArmorFlightHandler; // 🔥 ADDED: Import for the Flight Handler
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -34,6 +35,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -44,6 +47,8 @@ import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent; 
+import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -85,6 +90,60 @@ public class RigMod {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {}
 
+    @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    public static class CommonForgeEvents {
+        
+        @SubscribeEvent
+        public static void onPlayerHurt(LivingHurtEvent event) {
+            if (event.getEntity() instanceof Player player) {
+                ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+                
+                if (chest.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2) {
+                    int power = chest.getOrCreateTag().getInt("RigPower");
+                    
+                    // 🔥 1. IMMUNE TO FALL DAMAGE (If suit has power)
+                    if (event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) {
+                        if (power > 0) {
+                            event.setCanceled(true);
+                            return; 
+                        }
+                    }
+
+                    // 🔥 2. ENERGY SHIELD (Blocks hits, costs 1% power - Level 2 & 3)
+                    if (power > 0) {
+                        event.setCanceled(true); 
+                        chest.getOrCreateTag().putInt("RigPower", power - 1); 
+                        
+                        if (!player.level().isClientSide()) {
+                            player.level().playSound(null, player.blockPosition(), net.minecraft.sounds.SoundEvents.RESPAWN_ANCHOR_DEPLETE.get(), net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 2.0F);
+                        }
+                    }
+                }
+            }
+        }
+
+        @SubscribeEvent
+        public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
+            if (event.getEntity() instanceof Player player) {
+                if (event.getSlot() == EquipmentSlot.CHEST) {
+                    ItemStack newItem = event.getTo();
+                    
+                    if (!(newItem.getItem() instanceof Custom3DArmorItem)) {
+                        AttributeInstance health = player.getAttribute(Attributes.MAX_HEALTH);
+                        if (health != null) health.removeModifier(Custom3DArmorItem.HEALTH_MODIFIER_UUID);
+                        
+                        AttributeInstance kb = player.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+                        if (kb != null) kb.removeModifier(Custom3DArmorItem.KNOCKBACK_MODIFIER_UUID);
+                        
+                        if (player.getHealth() > player.getMaxHealth()) {
+                            player.setHealth(player.getMaxHealth());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
 
@@ -125,6 +184,7 @@ public class RigMod {
         public static void onKeyRegister(RegisterKeyMappingsEvent event) {
             event.register(KeyBindings.CYCLE_VISION_KEY);
             event.register(KeyBindings.CYCLE_RADAR_KEY);
+            event.register(KeyBindings.TOGGLE_STABLE_KEY); // 🔥 ADDED: Register Stable Key
         }
     }
 
@@ -139,9 +199,18 @@ public class RigMod {
             while (KeyBindings.CYCLE_RADAR_KEY.consumeClick()) {
                 ModMessages.sendToServer(new CycleRadarModePacket());
             }
+            
+            // 🔥 ADDED: Toggle Stable Mode Logic
+            while (KeyBindings.TOGGLE_STABLE_KEY.consumeClick()) {
+                ArmorFlightHandler.isStableMode = !ArmorFlightHandler.isStableMode;
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.player != null) {
+                    String state = ArmorFlightHandler.isStableMode ? "§aON" : "§cOFF";
+                    mc.player.displayClientMessage(net.minecraft.network.chat.Component.literal("§b[SUIT] Flight Stabilizer: " + state), true);
+                }
+            }
         }
 
-        // 🔥 Added this to silence the IDE generic warning!
         @SuppressWarnings("unchecked")
         @SubscribeEvent
         public static void onRenderArm(RenderArmEvent event) {
@@ -153,19 +222,23 @@ public class RigMod {
             event.setCanceled(true);
 
             Minecraft mc = Minecraft.getInstance();
+
             EntityRenderer<?> renderer = mc.getEntityRenderDispatcher().getRenderer(player);
 
             if (!(renderer instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer playerRenderer)) return;
 
-            HumanoidModel<LivingEntity> playerModel = (HumanoidModel<LivingEntity>) (Object) playerRenderer.getModel();
+            HumanoidModel<LivingEntity> playerModel =
+                    (HumanoidModel<LivingEntity>) (Object) playerRenderer.getModel();
 
             String textureName = armorItem.getArmorTexture(chest, player, EquipmentSlot.CHEST, null);
             if (textureName == null) return;
 
             ResourceLocation texture = ResourceLocation.parse(textureName);
-            VertexConsumer buffer = event.getMultiBufferSource().getBuffer(RenderType.armorCutoutNoCull(texture));
+            VertexConsumer buffer = event.getMultiBufferSource()
+                    .getBuffer(RenderType.armorCutoutNoCull(texture));
 
             event.getPoseStack().pushPose();
+
             float partialTick = mc.getFrameTime();
 
             HumanoidModel<LivingEntity> model;
@@ -187,13 +260,16 @@ public class RigMod {
             playerModel.copyPropertiesTo(model);
             model.setupAnim(player, 0, 0, partialTick, player.getYRot(), player.getXRot());
 
-            // 🔥 NO MORE TRANSLATIONS: The native math handles it perfectly!
             if (event.getArm() == HumanoidArm.RIGHT) {
                 model.rightArm.copyFrom(playerModel.rightArm);
-                model.rightArm.render(event.getPoseStack(), buffer, event.getPackedLight(), OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
+                model.rightArm.render(event.getPoseStack(), buffer,
+                        event.getPackedLight(), OverlayTexture.NO_OVERLAY,
+                        1, 1, 1, 1);
             } else {
                 model.leftArm.copyFrom(playerModel.leftArm);
-                model.leftArm.render(event.getPoseStack(), buffer, event.getPackedLight(), OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
+                model.leftArm.render(event.getPoseStack(), buffer,
+                        event.getPackedLight(), OverlayTexture.NO_OVERLAY,
+                        1, 1, 1, 1);
             }
 
             event.getPoseStack().popPose();

@@ -1,6 +1,7 @@
 package com.rigmod.client;
 
 import com.rigmod.RigMod;
+import com.rigmod.item.Custom3DArmorItem; // 🔥 Don't forget this import!
 import com.rigmod.item.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,7 +21,7 @@ public class PowerOverlay {
     @SubscribeEvent
     public static void onRenderHUD(RenderGuiOverlayEvent.Post event) {
         
-        // ✅ THE FIX: Wait for the FOOD bar to finish drawing, not the armor!
+        // ✅ Wait for the FOOD bar to finish drawing, not the armor!
         if (event.getOverlay() != VanillaGuiOverlay.FOOD_LEVEL.type()) {
             return;
         }
@@ -29,9 +30,9 @@ public class PowerOverlay {
         Player player = minecraft.player;
         if (player == null) return;
 
-        // Check if they are wearing the Level 2 Flight Armor
+        // 🔥 THE FIX: Now checks if they are wearing ANY powered armor (Level 2 or Level 3)
         ItemStack chestplate = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (chestplate.getItem() != ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()) {
+        if (!(chestplate.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2)) {
             return; 
         }
 

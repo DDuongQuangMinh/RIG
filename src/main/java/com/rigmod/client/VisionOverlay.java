@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ArmorItem; 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -28,6 +29,16 @@ public class VisionOverlay {
         LocalPlayer player = mc.player;
 
         if (player == null || mc.options.hideGui) return;
+
+        // 🔥 THE FIX: ALL HELMETS NOW REQUIRE A POWERED CHESTPLATE
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        if (chest.getItem() instanceof Custom3DArmorItem chestArmor && chestArmor.getType() == ArmorItem.Type.CHESTPLATE) {
+            if (chest.getOrCreateTag().getInt("RigPower") <= 0) {
+                return; // ⛔ ABORT: BATTERY DEAD = NORMAL SCREEN ⛔
+            }
+        } else {
+            return; // ⛔ ABORT: NO POWERED SUIT EQUIPPED ⛔
+        }
 
         ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
         if (!(helmet.getItem() instanceof Custom3DArmorItem armor)) return;
@@ -77,7 +88,7 @@ public class VisionOverlay {
         // --- LEVEL 3 HELMET LOGIC ---
         else if (armor.getArmorLevel() == 3) {
             
-            // MODE 0: EXACT 1:1 COPY OF LEVEL 2 THERMAL DESIGN
+            // 🔥 REVERTED TO MODE 0: Scanner
             if (mode == 0) {
                 RenderSystem.enableBlend();
                 guiGraphics.fill(0, 0, width, height, 0x770D001F);
@@ -85,7 +96,7 @@ public class VisionOverlay {
                 renderNoiseLight(guiGraphics, width, height, false);
             }
             
-            // MODE 1: HEAT VISION (Level 2 Design + Orange Tint + Celsius)
+            // 🔥 REVERTED TO MODE 1: Thermal
             else if (mode == 1) {
                 RenderSystem.enableBlend();
                 guiGraphics.fill(0, 0, width, height, 0x33FF5500); 
@@ -93,7 +104,6 @@ public class VisionOverlay {
                 renderDigitalScanner(guiGraphics, width, height, mc.level.getGameTime());
                 renderNoiseLight(guiGraphics, width, height, false);
 
-                // Draw FLIR Crosshair
                 int cx = width / 2;
                 int cy = height / 2;
 
@@ -103,7 +113,6 @@ public class VisionOverlay {
                 guiGraphics.fill(cx - 1, cy - 15, cx + 1, cy + 15, 0xFFFFFFFF);
                 guiGraphics.fill(cx - 3, cy - 3, cx + 3, cy + 3, 0x88FFAA00);
 
-                // --- CALCULATE REAL-TIME TEMPERATURE ---
                 double targetTemp = 22.5;
 
                 if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.ENTITY) {
@@ -114,7 +123,6 @@ public class VisionOverlay {
                         BlockPos pos = ((BlockHitResult) blockHit).getBlockPos();
                         BlockState state = mc.level.getBlockState(pos);
 
-                        // 🔥 THE FIX: Lowered extreme temperatures to look better on the UI!
                         if (state.is(Blocks.LAVA)) targetTemp = 145.0 + RANDOM.nextDouble() * 15; 
                         else if (state.is(Blocks.WATER)) targetTemp = 12.0 + RANDOM.nextDouble() * 3;
                         else if (state.is(Blocks.FIRE) || state.is(Blocks.CAMPFIRE) || state.is(Blocks.MAGMA_BLOCK)) targetTemp = 95.0 + RANDOM.nextDouble() * 20;
@@ -145,9 +153,6 @@ public class VisionOverlay {
         }
     };
 
-    // =========================
-    // HELPER METHODS 
-    // =========================
     private static void renderDigitalScanner(GuiGraphics g, int w, int h, long gameTime) {
         int scanPos = (int) ((gameTime * 4) % h);
         g.fill(0, scanPos, w, scanPos + 1, 0x3300FFCC);

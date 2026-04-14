@@ -7,7 +7,7 @@ import com.rigmod.client.Level2HelmetModel;
 import com.rigmod.client.Level2ChestplateModel; 
 import com.rigmod.client.model.StandardLevel1ChestModel;
 import com.rigmod.client.model.EngineeringLevel3HelmetModel;
-import com.rigmod.client.model.EngineeringLevel3ChestplateModel; // 🔥 NEW IMPORT
+import com.rigmod.client.model.EngineeringLevel3ChestplateModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
 import net.minecraft.client.Minecraft;
@@ -19,6 +19,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
@@ -42,8 +43,9 @@ public class Custom3DArmorItem extends ArmorItem {
     private final int armorLevel; 
     private Multimap<Attribute, AttributeModifier> customModifiers;
 
-    private static final UUID HEALTH_MODIFIER_UUID = UUID.fromString("d2b3dbe3-0834-4373-90b7-eba5785e061b");
-    private static final UUID SPEED_MODIFIER_UUID = UUID.fromString("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d");
+    public static final UUID HEALTH_MODIFIER_UUID = UUID.fromString("d2b3dbe3-0834-4373-90b7-eba5785e061b");
+    public static final UUID SPEED_MODIFIER_UUID = UUID.fromString("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d");
+    public static final UUID KNOCKBACK_MODIFIER_UUID = UUID.fromString("3b9a9a4a-7a58-4521-8289-5369a1b79e78");
 
     public Custom3DArmorItem(ArmorMaterial material, Type type, Properties properties, String customTexture, int armorLevel) {
         super(material, type, properties);
@@ -55,10 +57,20 @@ public class Custom3DArmorItem extends ArmorItem {
         return this.armorLevel;
     }
 
-    // Makes the Level 3 Helmet immune to burning in lava (like Netherite!)
     @Override
     public boolean isFireResistant() {
-        return this.armorLevel == 3 || super.isFireResistant();
+        return this.armorLevel >= 2 || super.isFireResistant();
+    }
+
+    @Override
+    public boolean isDamageable(ItemStack stack) {
+        return this.armorLevel < 2 && super.isDamageable(stack);
+    }
+
+    @Override
+    public void setDamage(ItemStack stack, int damage) {
+        if (this.armorLevel >= 2) return;
+        super.setDamage(stack, damage);
     }
 
     @Override
@@ -67,27 +79,17 @@ public class Custom3DArmorItem extends ArmorItem {
             if (this.customModifiers == null) {
                 ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
                 
-                // THE NETHERITE 1.5x UPGRADE
-                if (this.getType() == Type.HELMET && this.armorLevel == 3) {
-                    builder.put(Attributes.ARMOR, new AttributeModifier(
-                            UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150"), "Armor modifier", 4.5D, AttributeModifier.Operation.ADDITION));
-                    builder.put(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(
-                            UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB151"), "Armor toughness", 4.5D, AttributeModifier.Operation.ADDITION));
-                    builder.put(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(
-                            UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB152"), "Armor knockback resistance", 0.15D, AttributeModifier.Operation.ADDITION));
+                if (this.getType() == Type.HELMET && this.armorLevel >= 2) {
+                    builder.put(Attributes.ARMOR, new AttributeModifier(UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150"), "Armor modifier", 4.5D, AttributeModifier.Operation.ADDITION));
+                    builder.put(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB151"), "Armor toughness", 4.5D, AttributeModifier.Operation.ADDITION));
                 } else {
                     builder.putAll(super.getDefaultAttributeModifiers(slot));
                 }
 
-                if (this.getType() == Type.CHESTPLATE) {
-                    double healthBoost = (this.armorLevel == 2) ? 20.0D : 8.0D;
-                    builder.put(Attributes.MAX_HEALTH, new AttributeModifier(
-                            HEALTH_MODIFIER_UUID, "Chestplate health boost", healthBoost, AttributeModifier.Operation.ADDITION));
-                }
                 if (this.getType() == Type.LEGGINGS) {
-                    builder.put(Attributes.MOVEMENT_SPEED, new AttributeModifier(
-                            SPEED_MODIFIER_UUID, "Leggings speed boost", 0.20D, AttributeModifier.Operation.MULTIPLY_TOTAL));
+                    builder.put(Attributes.MOVEMENT_SPEED, new AttributeModifier(SPEED_MODIFIER_UUID, "Leggings speed boost", 0.20D, AttributeModifier.Operation.MULTIPLY_TOTAL));
                 }
+                
                 this.customModifiers = builder.build();
             }
             return this.customModifiers;
@@ -107,136 +109,208 @@ public class Custom3DArmorItem extends ArmorItem {
     public void onArmorTick(ItemStack stack, Level level, Player player) {
         if (level.isClientSide()) return;
 
-        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (!(chest.getItem() instanceof Custom3DArmorItem chestItem && chestItem.getType() == Type.CHESTPLATE)) {
-            if (player.getHealth() > player.getMaxHealth()) {
-                player.setHealth(player.getMaxHealth());
-            }
-        }
-
-        // --- HELMET LOGIC ---
+        // ==========================================
+        // 🟢 HELMET LOGIC
+        // ==========================================
         if (this.getType() == Type.HELMET) {
             CompoundTag tag = stack.getOrCreateTag();
             int visionMode = tag.getInt("VisionMode");
 
-            if (this.armorLevel == 1) {
-                if (visionMode == 1 || visionMode == 2) {
-                    MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
-                    if (currentNV == null || currentNV.getDuration() <= 200) {
-                        player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
-                    }
-                } else if (visionMode == 3) {
-                    player.removeEffect(MobEffects.NIGHT_VISION);
-                    AABB box = player.getBoundingBox().inflate(40.0D);
-                    List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
-                    for (LivingEntity target : entities) {
-                        MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
-                        if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
-                            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
-                        }
-                    }
-                } else {
-                    player.removeEffect(MobEffects.NIGHT_VISION);
-                }
-            } 
-            else if (this.armorLevel == 2) {
-                player.removeEffect(MobEffects.NIGHT_VISION);
-                if (visionMode > 0) {
-                    AABB box = player.getBoundingBox().inflate(40.0D);
-                    List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
-                    for (LivingEntity target : entities) {
-                        MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
-                        if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
-                            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
-                        }
-                    }
-                }
-                
-                int radarMode = tag.getInt("RadarMode");
-                if (radarMode > 0 && player.tickCount % 20 == 0) {
-                    AABB radarBox = player.getBoundingBox().inflate(200.0D); 
-                    int entityCount = 0;
-                    int playerCount = 0;
+            ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+            int power = 0;
+            if (chest.getItem() instanceof Custom3DArmorItem chestItem && chestItem.getType() == Type.CHESTPLATE) {
+                power = chest.getOrCreateTag().getInt("RigPower");
+            }
 
-                    if (radarMode == 1 || radarMode == 3) {
-                        List<LivingEntity> mobs = level.getEntitiesOfClass(LivingEntity.class, radarBox, e -> e != player && !(e instanceof Player));
-                        entityCount = mobs.size();
-                    }
-                    if (radarMode == 2 || radarMode == 3) {
-                        List<Player> players = level.getEntitiesOfClass(Player.class, radarBox, e -> e != player);
-                        playerCount = players.size();
-                    }
+            boolean isVisionActive = false;
+            if (this.armorLevel == 3 && (visionMode == 0 || visionMode == 1)) isVisionActive = true;
+            if (this.armorLevel < 3 && visionMode > 0) isVisionActive = true;
 
-                    String radarMsg = "§a[RADAR] ";
-                    if (radarMode == 1) radarMsg += "Scanning Mobs (" + entityCount + " detected)";
-                    else if (radarMode == 2) radarMsg += "Scanning Players (" + playerCount + " detected)";
-                    else if (radarMode == 3) radarMsg += "Scanning All (Mobs: " + entityCount + " | Players: " + playerCount + ")";
-
-                    player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
+            // DRAIN POWER IF VISION IS ON
+            if (power > 0 && isVisionActive) {
+                if (player.tickCount % 400 == 0) {
+                    power = Math.max(0, power - 5); 
+                    chest.getOrCreateTag().putInt("RigPower", power);
                 }
             }
-            // --- LEVEL 3 LOGIC ---
-            else if (this.armorLevel == 3) {
-                
-                MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
-                if (currentNV == null || currentNV.getDuration() <= 200) {
-                    player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
-                }
-                
-                Scoreboard scoreboard = level.getScoreboard();
-                PlayerTeam redTeam = scoreboard.getPlayerTeam("RigThermalRed");
-                if (redTeam == null) {
-                    redTeam = scoreboard.addPlayerTeam("RigThermalRed");
-                    redTeam.setColor(net.minecraft.ChatFormatting.RED);
-                }
 
-                AABB box = player.getBoundingBox().inflate(40.0D);
-                List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
-
-                for (LivingEntity target : entities) {
-                    MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
-                    if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
-                        target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
-                    }
-                    
-                    if (visionMode == 1) {
-                        scoreboard.addPlayerToTeam(target.getScoreboardName(), redTeam);
+            if (power <= 0) {
+                player.removeEffect(MobEffects.NIGHT_VISION);
+            } 
+            else {
+                if (this.armorLevel == 1) {
+                    if (visionMode == 1 || visionMode == 2) {
+                        MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
+                        if (currentNV == null || currentNV.getDuration() <= 200) {
+                            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
+                        }
+                    } else if (visionMode == 3) {
+                        player.removeEffect(MobEffects.NIGHT_VISION);
+                        AABB box = player.getBoundingBox().inflate(40.0D);
+                        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
+                        for (LivingEntity target : entities) {
+                            MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
+                            if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
+                                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                            }
+                        }
                     } else {
-                        if (scoreboard.getPlayersTeam(target.getScoreboardName()) != null && scoreboard.getPlayersTeam(target.getScoreboardName()).getName().equals("RigThermalRed")) {
-                            scoreboard.removePlayerFromTeam(target.getScoreboardName(), redTeam);
+                        player.removeEffect(MobEffects.NIGHT_VISION);
+                    }
+                } 
+                else if (this.armorLevel == 2) {
+                    player.removeEffect(MobEffects.NIGHT_VISION);
+                    if (visionMode > 0) {
+                        AABB box = player.getBoundingBox().inflate(40.0D);
+                        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
+                        for (LivingEntity target : entities) {
+                            MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
+                            if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
+                                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                            }
                         }
                     }
+                    
+                    int radarMode = tag.getInt("RadarMode");
+                    if (radarMode > 0 && player.tickCount % 20 == 0) {
+                        AABB radarBox = player.getBoundingBox().inflate(200.0D); 
+                        int entityCount = 0;
+                        int playerCount = 0;
+
+                        if (radarMode == 1 || radarMode == 3) {
+                            List<LivingEntity> mobs = level.getEntitiesOfClass(LivingEntity.class, radarBox, e -> e != player && !(e instanceof Player));
+                            entityCount = mobs.size();
+                        }
+                        if (radarMode == 2 || radarMode == 3) {
+                            List<Player> players = level.getEntitiesOfClass(Player.class, radarBox, e -> e != player);
+                            playerCount = players.size();
+                        }
+
+                        String radarMsg = "§a[RADAR] ";
+                        if (radarMode == 1) radarMsg += "Scanning Mobs (" + entityCount + " detected)";
+                        else if (radarMode == 2) radarMsg += "Scanning Players (" + playerCount + " detected)";
+                        else if (radarMode == 3) radarMsg += "Scanning All (Mobs: " + entityCount + " | Players: " + playerCount + ")";
+
+                        player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
+                    }
                 }
+                else if (this.armorLevel == 3) {
+                    
+                    if (visionMode == 0 || visionMode == 1) {
+                        MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
+                        if (currentNV == null || currentNV.getDuration() <= 200) {
+                            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
+                        }
+                        
+                        Scoreboard scoreboard = level.getScoreboard();
+                        PlayerTeam redTeam = scoreboard.getPlayerTeam("RigThermalRed");
+                        if (redTeam == null) {
+                            redTeam = scoreboard.addPlayerTeam("RigThermalRed");
+                            redTeam.setColor(net.minecraft.ChatFormatting.RED);
+                        }
 
-                int radarMode = tag.getInt("RadarMode");
-                if (radarMode > 0 && player.tickCount % 20 == 0) {
-                    AABB radarBox = player.getBoundingBox().inflate(200.0D); 
-                    int entityCount = 0;
-                    int playerCount = 0;
+                        AABB box = player.getBoundingBox().inflate(40.0D);
+                        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, box, e -> e != player);
 
-                    if (radarMode == 1 || radarMode == 3) {
-                        List<LivingEntity> mobs = level.getEntitiesOfClass(LivingEntity.class, radarBox, e -> e != player && !(e instanceof Player));
-                        entityCount = mobs.size();
+                        for (LivingEntity target : entities) {
+                            MobEffectInstance currentGlowing = target.getEffect(MobEffects.GLOWING);
+                            if (currentGlowing == null || currentGlowing.getDuration() <= 5) {
+                                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10, 0, false, false, false));
+                            }
+                            
+                            if (visionMode == 1) {
+                                scoreboard.addPlayerToTeam(target.getScoreboardName(), redTeam);
+                            } else {
+                                if (scoreboard.getPlayersTeam(target.getScoreboardName()) != null && scoreboard.getPlayersTeam(target.getScoreboardName()).getName().equals("RigThermalRed")) {
+                                    scoreboard.removePlayerFromTeam(target.getScoreboardName(), redTeam);
+                                }
+                            }
+                        }
+                    } else {
+                        player.removeEffect(MobEffects.NIGHT_VISION);
                     }
-                    if (radarMode == 2 || radarMode == 3) {
-                        List<Player> players = level.getEntitiesOfClass(Player.class, radarBox, e -> e != player);
-                        playerCount = players.size();
+
+                    int radarMode = tag.getInt("RadarMode");
+                    if (radarMode > 0 && player.tickCount % 20 == 0) {
+                        AABB radarBox = player.getBoundingBox().inflate(200.0D); 
+                        int entityCount = 0;
+                        int playerCount = 0;
+
+                        if (radarMode == 1 || radarMode == 3) {
+                            List<LivingEntity> mobs = level.getEntitiesOfClass(LivingEntity.class, radarBox, e -> e != player && !(e instanceof Player));
+                            entityCount = mobs.size();
+                        }
+                        if (radarMode == 2 || radarMode == 3) {
+                            List<Player> players = level.getEntitiesOfClass(Player.class, radarBox, e -> e != player);
+                            playerCount = players.size();
+                        }
+
+                        String radarMsg = "§a[RADAR] ";
+                        if (radarMode == 1) radarMsg += "Scanning Mobs (" + entityCount + " detected)";
+                        else if (radarMode == 2) radarMsg += "Scanning Players (" + playerCount + " detected)";
+                        else if (radarMode == 3) radarMsg += "Scanning All (Mobs: " + entityCount + " | Players: " + playerCount + ")";
+
+                        player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
                     }
-
-                    String radarMsg = "§a[RADAR] ";
-                    if (radarMode == 1) radarMsg += "Scanning Mobs (" + entityCount + " detected)";
-                    else if (radarMode == 2) radarMsg += "Scanning Players (" + playerCount + " detected)";
-                    else if (radarMode == 3) radarMsg += "Scanning All (Mobs: " + entityCount + " | Players: " + playerCount + ")";
-
-                    player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
                 }
             }
         }
 
+        // ==========================================
+        // 🟢 CHESTPLATE LOGIC
+        // ==========================================
         if (this.getType() == Type.CHESTPLATE) {
-            if (player.tickCount % 40 == 0) {
-                if (player.getHealth() < player.getMaxHealth()) {
-                    player.heal(1.0F);
+            CompoundTag tag = stack.getOrCreateTag();
+            int power = tag.getInt("RigPower");
+
+            // 🔥 WIPE STUCK NBT BUG: Permanently deletes the old 40 health stat from the item file
+            if (tag.contains("AttributeModifiers")) {
+                tag.remove("AttributeModifiers");
+            }
+
+            AttributeInstance healthAttr = player.getAttribute(Attributes.MAX_HEALTH);
+            AttributeInstance kbAttr = player.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
+
+            if (power > 0) {
+                if (healthAttr != null) {
+                    double targetHealth = (this.armorLevel >= 2) ? 20.0D : 8.0D;
+                    AttributeModifier currentMod = healthAttr.getModifier(HEALTH_MODIFIER_UUID);
+                    if (currentMod == null || currentMod.getAmount() != targetHealth) {
+                        healthAttr.removeModifier(HEALTH_MODIFIER_UUID);
+                        healthAttr.addTransientModifier(new AttributeModifier(HEALTH_MODIFIER_UUID, "Chestplate health boost", targetHealth, AttributeModifier.Operation.ADDITION));
+                    }
+                }
+                
+                if (kbAttr != null && this.armorLevel >= 2) {
+                    if (kbAttr.getModifier(KNOCKBACK_MODIFIER_UUID) == null) {
+                        kbAttr.addTransientModifier(new AttributeModifier(KNOCKBACK_MODIFIER_UUID, "Chestplate knockback resistance", 1.0D, AttributeModifier.Operation.ADDITION));
+                    }
+                }
+            } 
+            else {
+                if (healthAttr != null && healthAttr.getModifier(HEALTH_MODIFIER_UUID) != null) {
+                    healthAttr.removeModifier(HEALTH_MODIFIER_UUID);
+                    if (player.getHealth() > player.getMaxHealth()) {
+                        player.setHealth(player.getMaxHealth());
+                    }
+                }
+                if (kbAttr != null && kbAttr.getModifier(KNOCKBACK_MODIFIER_UUID) != null) {
+                    kbAttr.removeModifier(KNOCKBACK_MODIFIER_UUID);
+                }
+            }
+
+            // INSTANT RECOVERY
+            if (this.armorLevel == 3) {
+                if (power >= 2 && player.getHealth() < player.getMaxHealth()) {
+                    player.setHealth(player.getMaxHealth()); 
+                    tag.putInt("RigPower", power - 2);
+                }
+            } 
+            else if (this.armorLevel == 2) {
+                if (player.tickCount % 40 == 0) {
+                    if (player.getHealth() < player.getMaxHealth()) {
+                        player.heal(1.0F); 
+                    }
                 }
             }
         }
@@ -266,7 +340,6 @@ public class Custom3DArmorItem extends ArmorItem {
                 }
                 
                 if (armorSlot == EquipmentSlot.CHEST) {
-                    // 🔥 NEW: Level 3 Chestplate rendering logic
                     if (Custom3DArmorItem.this.armorLevel == 3) {
                         EngineeringLevel3ChestplateModel<?> customModel3 = new EngineeringLevel3ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3ChestplateModel.LAYER_LOCATION));
                         customModel3.young = _default.young; customModel3.crouching = _default.crouching; customModel3.riding = _default.riding; customModel3.rightArmPose = _default.rightArmPose; customModel3.leftArmPose = _default.leftArmPose;
