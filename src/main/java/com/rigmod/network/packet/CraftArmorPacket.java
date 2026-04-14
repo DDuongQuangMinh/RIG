@@ -48,10 +48,11 @@ public class CraftArmorPacket {
                 else if (index == 1) targetItem = ModItems.ENGINEERING_LEVEL_2_HELMET.get();
                 else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_HELMET.get();
             } 
-            else if (tab == 1) { // CHESTPLATES
-                if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get();
-                else if (index == 1) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get();
-                else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get();
+            else if (tab == 1) { // CHESTPLATES (🔥 UPDATED INDEXES)
+                if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get(); // NEW Level 3 Chest
+                else if (index == 1) targetItem = ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get();
+                else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get();
+                else if (index == 3) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get();
             } 
             else if (tab == 2) { // LEGGINGS
                 if (index == 0) targetItem = ModItems.STANDARD_LEVEL_1_LEGGINGS.get();
@@ -100,7 +101,28 @@ public class CraftArmorPacket {
                     canCraft = true;
                 }
             }
+            
             // --- CHESTPLATES ---
+            // 🔥 NEW: Level 3 Chestplate Recipe Consumption
+            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get())) {
+                if (hasItem(player, ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get(), 1) && hasItem(player, ModItems.TITANIUM_INGOT.get(), 12) && hasItem(player, ModItems.BATTERY_LEVEL_4.get(), 1) && hasItem(player, Items.NETHERITE_INGOT, 4)) {
+                    consumeItem(player, ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get(), 1);
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 12);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_4.get(), 1);
+                    consumeItem(player, Items.NETHERITE_INGOT, 4);
+                    canCraft = true;
+                }
+            }
+            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get())) {
+                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 10) && hasItem(player, Items.QUARTZ, 28) && hasItem(player, ModItems.BATTERY_LEVEL_5.get(), 5) && hasItem(player, Items.DIAMOND, 12) && hasItem(player, Items.NETHERITE_INGOT, 3)) {
+                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 10);
+                    consumeItem(player, Items.QUARTZ, 28);
+                    consumeItem(player, ModItems.BATTERY_LEVEL_5.get(), 5);
+                    consumeItem(player, Items.DIAMOND, 12);
+                    consumeItem(player, Items.NETHERITE_INGOT, 3);
+                    canCraft = true;
+                }
+            }
             else if (targetItem.equals(ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get())) {
                 if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 5) && hasItem(player, Items.COPPER_INGOT, 7) && hasItem(player, Items.REDSTONE, 5) && hasItem(player, Items.QUARTZ, 5)) {
                     consumeItem(player, ModItems.TITANIUM_INGOT.get(), 5);
@@ -119,16 +141,7 @@ public class CraftArmorPacket {
                     canCraft = true;
                 }
             }
-            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get())) {
-                if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 10) && hasItem(player, Items.QUARTZ, 28) && hasItem(player, ModItems.BATTERY_LEVEL_5.get(), 5) && hasItem(player, Items.DIAMOND, 12) && hasItem(player, Items.NETHERITE_INGOT, 3)) {
-                    consumeItem(player, ModItems.TITANIUM_INGOT.get(), 10);
-                    consumeItem(player, Items.QUARTZ, 28);
-                    consumeItem(player, ModItems.BATTERY_LEVEL_5.get(), 5);
-                    consumeItem(player, Items.DIAMOND, 12);
-                    consumeItem(player, Items.NETHERITE_INGOT, 3);
-                    canCraft = true;
-                }
-            }
+            
             // --- LEGGINGS ---
             else if (targetItem.equals(ModItems.STANDARD_LEVEL_1_LEGGINGS.get())) {
                 if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 4) && hasItem(player, Items.BLACK_DYE, 3) && hasItem(player, Items.QUARTZ, 6)) {
@@ -138,6 +151,7 @@ public class CraftArmorPacket {
                     canCraft = true;
                 }
             }
+            
             // --- BATTERIES ---
             else if (targetItem.equals(ModItems.BATTERY_LEVEL_1.get())) {
                 if (hasItem(player, ModItems.TITANIUM_INGOT.get(), 1) && hasItem(player, Items.REDSTONE, 4)) {
@@ -180,7 +194,7 @@ public class CraftArmorPacket {
                     player.drop(itemToGive, false); // Drops on ground if inventory is full
                 }
 
-                // 🔥 FORCE INVENTORY SYNC: Prevents ghost items!
+                // FORCE INVENTORY SYNC: Prevents ghost items!
                 player.containerMenu.broadcastChanges();
 
                 // Play Smithing sound
@@ -195,7 +209,7 @@ public class CraftArmorPacket {
             }
         });
         
-        // 🔥 CRITICAL: Tells the server this packet was processed successfully so it doesn't get dropped!
+        // CRITICAL: Tells the server this packet was processed successfully so it doesn't get dropped!
         context.setPacketHandled(true); 
         return true;
     }
@@ -223,7 +237,7 @@ public class CraftArmorPacket {
                 int toTake = Math.min(stack.getCount(), remaining);
                 stack.shrink(toTake);
                 
-                // 🔥 SAFE CLEAR: explicitly tells the game the slot is empty if it hits 0!
+                // SAFE CLEAR: explicitly tells the game the slot is empty if it hits 0!
                 if (stack.isEmpty()) {
                     player.getInventory().setItem(i, ItemStack.EMPTY);
                 }

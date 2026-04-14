@@ -45,7 +45,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
 
     private final int[] powerValues = {5, 7, 12, 15, 20, 30, 40};
 
-    // 🔥 Added 4th Tab for Batteries
     private final ItemStack[][] categorizedBlueprints = new ItemStack[][]{
         new ItemStack[]{ // Tab 0: Helmets
             new ItemStack(ModItems.ENGINEERING_LEVEL_3_HELMET.get()),
@@ -53,6 +52,7 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             new ItemStack(ModItems.STANDARD_LEVEL_1_HELMET.get())
         },
         new ItemStack[]{ // Tab 1: Chestplates
+            new ItemStack(ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get()), // 🔥 NEW: Level 3 Chestplate added to list!
             new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()),
             new ItemStack(ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get()),
             new ItemStack(ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get())
@@ -71,7 +71,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         }
     };
 
-    // 🔥 Added Battery Icon to Tab Headers
     private final ItemStack[] tabIcons = new ItemStack[]{
         new ItemStack(ModItems.ENGINEERING_LEVEL_2_HELMET.get()),
         new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()),
@@ -132,10 +131,14 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         if (item == ModItems.STANDARD_LEVEL_1_HELMET.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 5), new ItemStack(ModItems.BATTERY_LEVEL_1.get(), 2), new ItemStack(Items.ENDER_EYE, 1) };
         if (item == ModItems.ENGINEERING_LEVEL_2_HELMET.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 7), new ItemStack(ModItems.BATTERY_LEVEL_2.get(), 2), new ItemStack(Items.ENDER_EYE, 3) };
         if (item == ModItems.ENGINEERING_LEVEL_3_HELMET.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 10), new ItemStack(ModItems.BATTERY_LEVEL_3.get(), 1), new ItemStack(Items.BLAZE_ROD, 5), new ItemStack(Items.NETHERITE_INGOT, 3) };
+        
         // Chests
+        // 🔥 NEW: Added recipe requirements for Level 3 Chestplate!
+        if (item == ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get()) return new ItemStack[]{ new ItemStack(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get(), 1), new ItemStack(ModItems.TITANIUM_INGOT.get(), 12), new ItemStack(ModItems.BATTERY_LEVEL_4.get(), 1), new ItemStack(Items.NETHERITE_INGOT, 4) };
+        if (item == ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 10), new ItemStack(Items.QUARTZ, 28), new ItemStack(ModItems.BATTERY_LEVEL_5.get(), 5), new ItemStack(Items.DIAMOND, 12), new ItemStack(Items.NETHERITE_INGOT, 3) };
         if (item == ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 5), new ItemStack(Items.COPPER_INGOT, 7), new ItemStack(Items.REDSTONE, 5), new ItemStack(Items.QUARTZ, 5) };
         if (item == ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 5), new ItemStack(Items.QUARTZ, 12), new ItemStack(Items.REDSTONE, 7), new ItemStack(Items.DIAMOND, 3) };
-        if (item == ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 10), new ItemStack(Items.QUARTZ, 28), new ItemStack(ModItems.BATTERY_LEVEL_5.get(), 5), new ItemStack(Items.DIAMOND, 12), new ItemStack(Items.NETHERITE_INGOT, 3) };
+        
         // Legs
         if (item == ModItems.STANDARD_LEVEL_1_LEGGINGS.get()) return new ItemStack[]{ new ItemStack(ModItems.TITANIUM_INGOT.get(), 4), new ItemStack(Items.BLACK_DYE, 3), new ItemStack(Items.QUARTZ, 6) };
         

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.rigmod.client.Level2HelmetModel;
 import com.rigmod.client.Level2ChestplateModel;
 import com.rigmod.client.model.EngineeringLevel3HelmetModel;
+import com.rigmod.client.model.EngineeringLevel3ChestplateModel;
 import com.rigmod.client.model.StandardLevel1ChestModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
@@ -84,7 +85,6 @@ public class RigMod {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {}
 
-    // ================= CLIENT MOD EVENTS =================
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
 
@@ -105,9 +105,8 @@ public class RigMod {
             event.registerLayerDefinition(Level2HelmetModel.LAYER_LOCATION, Level2HelmetModel::createBodyLayer);
             event.registerLayerDefinition(Level2ChestplateModel.LAYER_LOCATION, Level2ChestplateModel::createBodyLayer);
             event.registerLayerDefinition(EngineeringLevel3HelmetModel.LAYER_LOCATION, EngineeringLevel3HelmetModel::createBodyLayer);
+            event.registerLayerDefinition(EngineeringLevel3ChestplateModel.LAYER_LOCATION, EngineeringLevel3ChestplateModel::createBodyLayer);
             event.registerLayerDefinition(RigWorkbenchModel.LAYER_LOCATION, RigWorkbenchModel::createBodyLayer);
-
-            // ⚠️ REQUIRED FOR YOUR ARM MODEL
             event.registerLayerDefinition(StandardLevel1ChestModel.LAYER_LOCATION, StandardLevel1ChestModel::createBodyLayer);
         }
 
@@ -129,7 +128,6 @@ public class RigMod {
         }
     }
 
-    // ================= CLIENT FORGE EVENTS =================
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
     public static class ClientForgeEvents {
 
@@ -143,6 +141,8 @@ public class RigMod {
             }
         }
 
+        // 🔥 Added this to silence the IDE generic warning!
+        @SuppressWarnings("unchecked")
         @SubscribeEvent
         public static void onRenderArm(RenderArmEvent event) {
             Player player = event.getPlayer();
@@ -153,48 +153,47 @@ public class RigMod {
             event.setCanceled(true);
 
             Minecraft mc = Minecraft.getInstance();
-
-            // ✅ FIXED: no generics conflict
-            EntityRenderer<?> renderer =
-                    mc.getEntityRenderDispatcher().getRenderer(player);
+            EntityRenderer<?> renderer = mc.getEntityRenderDispatcher().getRenderer(player);
 
             if (!(renderer instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer playerRenderer)) return;
 
-            // ✅ FIXED: safe generic cast
-            @SuppressWarnings("unchecked")
-            HumanoidModel<LivingEntity> playerModel =
-                    (HumanoidModel<LivingEntity>) (Object) playerRenderer.getModel();
+            HumanoidModel<LivingEntity> playerModel = (HumanoidModel<LivingEntity>) (Object) playerRenderer.getModel();
 
             String textureName = armorItem.getArmorTexture(chest, player, EquipmentSlot.CHEST, null);
             if (textureName == null) return;
 
             ResourceLocation texture = ResourceLocation.parse(textureName);
-            VertexConsumer buffer = event.getMultiBufferSource()
-                    .getBuffer(RenderType.armorCutoutNoCull(texture));
+            VertexConsumer buffer = event.getMultiBufferSource().getBuffer(RenderType.armorCutoutNoCull(texture));
 
             event.getPoseStack().pushPose();
-
-            StandardLevel1ChestModel<LivingEntity> model =
-                    new StandardLevel1ChestModel<>(
-                            mc.getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION)
-                    );
-
-            playerModel.copyPropertiesTo(model);
-
             float partialTick = mc.getFrameTime();
 
+            HumanoidModel<LivingEntity> model;
+            
+            if (armorItem.getArmorLevel() == 3) {
+                model = (HumanoidModel<LivingEntity>) (Object) new EngineeringLevel3ChestplateModel<>(
+                        mc.getEntityModels().bakeLayer(EngineeringLevel3ChestplateModel.LAYER_LOCATION)
+                );
+            } else if (armorItem.getArmorLevel() == 2) {
+                model = (HumanoidModel<LivingEntity>) (Object) new Level2ChestplateModel<>(
+                        mc.getEntityModels().bakeLayer(Level2ChestplateModel.LAYER_LOCATION)
+                );
+            } else {
+                model = (HumanoidModel<LivingEntity>) (Object) new StandardLevel1ChestModel<>(
+                        mc.getEntityModels().bakeLayer(StandardLevel1ChestModel.LAYER_LOCATION)
+                );
+            }
+
+            playerModel.copyPropertiesTo(model);
             model.setupAnim(player, 0, 0, partialTick, player.getYRot(), player.getXRot());
 
+            // 🔥 NO MORE TRANSLATIONS: The native math handles it perfectly!
             if (event.getArm() == HumanoidArm.RIGHT) {
                 model.rightArm.copyFrom(playerModel.rightArm);
-                model.rightArm.render(event.getPoseStack(), buffer,
-                        event.getPackedLight(), OverlayTexture.NO_OVERLAY,
-                        1, 1, 1, 1);
+                model.rightArm.render(event.getPoseStack(), buffer, event.getPackedLight(), OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
             } else {
                 model.leftArm.copyFrom(playerModel.leftArm);
-                model.leftArm.render(event.getPoseStack(), buffer,
-                        event.getPackedLight(), OverlayTexture.NO_OVERLAY,
-                        1, 1, 1, 1);
+                model.leftArm.render(event.getPoseStack(), buffer, event.getPackedLight(), OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
             }
 
             event.getPoseStack().popPose();

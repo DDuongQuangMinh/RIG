@@ -7,6 +7,7 @@ import com.rigmod.client.Level2HelmetModel;
 import com.rigmod.client.Level2ChestplateModel; 
 import com.rigmod.client.model.StandardLevel1ChestModel;
 import com.rigmod.client.model.EngineeringLevel3HelmetModel;
+import com.rigmod.client.model.EngineeringLevel3ChestplateModel; // 🔥 NEW IMPORT
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
 import net.minecraft.client.Minecraft;
@@ -54,7 +55,7 @@ public class Custom3DArmorItem extends ArmorItem {
         return this.armorLevel;
     }
 
-    // 🔥 NEW: Makes the Level 3 Helmet immune to burning in lava (like Netherite!)
+    // Makes the Level 3 Helmet immune to burning in lava (like Netherite!)
     @Override
     public boolean isFireResistant() {
         return this.armorLevel == 3 || super.isFireResistant();
@@ -66,11 +67,8 @@ public class Custom3DArmorItem extends ArmorItem {
             if (this.customModifiers == null) {
                 ImmutableMultimap.Builder<Attribute, AttributeModifier> builder = ImmutableMultimap.builder();
                 
-                // 🔥 THE NETHERITE 1.5x UPGRADE 🔥
+                // THE NETHERITE 1.5x UPGRADE
                 if (this.getType() == Type.HELMET && this.armorLevel == 3) {
-                    // We completely bypass the default material and hardcode the 1.5x stats!
-                    // Vanilla Netherite Helmet: Armor 3.0 | Toughness 3.0 | KB Resist 0.1
-                    // Level 3 Helmet (x1.5): Armor 4.5 | Toughness 4.5 | KB Resist 0.15
                     builder.put(Attributes.ARMOR, new AttributeModifier(
                             UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150"), "Armor modifier", 4.5D, AttributeModifier.Operation.ADDITION));
                     builder.put(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(
@@ -78,7 +76,6 @@ public class Custom3DArmorItem extends ArmorItem {
                     builder.put(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(
                             UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB152"), "Armor knockback resistance", 0.15D, AttributeModifier.Operation.ADDITION));
                 } else {
-                    // Level 1 and 2 just use their normal material stats
                     builder.putAll(super.getDefaultAttributeModifiers(slot));
                 }
 
@@ -178,7 +175,7 @@ public class Custom3DArmorItem extends ArmorItem {
                     player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
                 }
             }
-            // 🔥 LEVEL 3 LOGIC 🔥
+            // --- LEVEL 3 LOGIC ---
             else if (this.armorLevel == 3) {
                 
                 MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
@@ -269,7 +266,13 @@ public class Custom3DArmorItem extends ArmorItem {
                 }
                 
                 if (armorSlot == EquipmentSlot.CHEST) {
-                    if (Custom3DArmorItem.this.armorLevel == 2) {
+                    // 🔥 NEW: Level 3 Chestplate rendering logic
+                    if (Custom3DArmorItem.this.armorLevel == 3) {
+                        EngineeringLevel3ChestplateModel<?> customModel3 = new EngineeringLevel3ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3ChestplateModel.LAYER_LOCATION));
+                        customModel3.young = _default.young; customModel3.crouching = _default.crouching; customModel3.riding = _default.riding; customModel3.rightArmPose = _default.rightArmPose; customModel3.leftArmPose = _default.leftArmPose;
+                        return customModel3;
+                    }
+                    else if (Custom3DArmorItem.this.armorLevel == 2) {
                         Level2ChestplateModel<?> customModel2 = new Level2ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2ChestplateModel.LAYER_LOCATION));
                         customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
                         return customModel2;
