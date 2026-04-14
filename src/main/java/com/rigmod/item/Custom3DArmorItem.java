@@ -264,6 +264,7 @@ public class Custom3DArmorItem extends ArmorItem {
             int power = tag.getInt("RigPower");
 
             // 🔥 WIPE STUCK NBT BUG: Permanently deletes the old 40 health stat from the item file
+            // When this item is put on, it scans and scrubs the broken saved NBT key forever.
             if (tag.contains("AttributeModifiers")) {
                 tag.remove("AttributeModifiers");
             }
@@ -309,7 +310,7 @@ public class Custom3DArmorItem extends ArmorItem {
             else if (this.armorLevel == 2) {
                 if (player.tickCount % 40 == 0) {
                     if (player.getHealth() < player.getMaxHealth()) {
-                        player.heal(1.0F); 
+                        player.heal(1.0F); // Slow normal healing
                     }
                 }
             }

@@ -21,5 +21,7 @@
   "creativetab.rig_tab": "RIG Suit Tech",
   "key.category.rigmod": "RIG Mod Controls",
   "key.rigmod.cycle_vision": "Toggle RIG Visor",
-  "key.rigmod.cycle_radar": "Cycle Radar Mode" 
+  "key.rigmod.cycle_radar": "Cycle Radar Mode",
+  "key.rigmod.rotate_left": "Yaw Left",
+  "key.rigmod.rotate_right": "Yaw Right"
 }

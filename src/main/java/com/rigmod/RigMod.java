@@ -23,7 +23,7 @@ import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.block.ModBlocks;
 import com.rigmod.blockentity.ModBlockEntities;
 import com.rigmod.menu.ModMenuTypes;
-import com.rigmod.event.ArmorFlightHandler; // 🔥 ADDED: Import for the Flight Handler
+import com.rigmod.event.ArmorFlightHandler;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -45,6 +45,8 @@ import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RenderArmEvent;
+import net.minecraftforge.client.event.RenderPlayerEvent; 
+import net.minecraftforge.client.event.ViewportEvent; 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent; 
@@ -101,7 +103,6 @@ public class RigMod {
                 if (chest.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2) {
                     int power = chest.getOrCreateTag().getInt("RigPower");
                     
-                    // 🔥 1. IMMUNE TO FALL DAMAGE (If suit has power)
                     if (event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) {
                         if (power > 0) {
                             event.setCanceled(true);
@@ -109,7 +110,6 @@ public class RigMod {
                         }
                     }
 
-                    // 🔥 2. ENERGY SHIELD (Blocks hits, costs 1% power - Level 2 & 3)
                     if (power > 0) {
                         event.setCanceled(true); 
                         chest.getOrCreateTag().putInt("RigPower", power - 1); 
@@ -184,12 +184,59 @@ public class RigMod {
         public static void onKeyRegister(RegisterKeyMappingsEvent event) {
             event.register(KeyBindings.CYCLE_VISION_KEY);
             event.register(KeyBindings.CYCLE_RADAR_KEY);
-            event.register(KeyBindings.TOGGLE_STABLE_KEY); // 🔥 ADDED: Register Stable Key
+            event.register(KeyBindings.TOGGLE_STABLE_KEY); 
+            event.register(KeyBindings.ROTATE_LEFT_KEY); 
+            event.register(KeyBindings.ROTATE_RIGHT_KEY); 
         }
     }
 
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
     public static class ClientForgeEvents {
+
+        @SubscribeEvent
+        public static void onCameraSetup(ViewportEvent.ComputeCameraAngles event) {
+            if (ArmorFlightHandler.currentRoll != 0.0F && event.getCamera().getEntity() instanceof Player) {
+                event.setRoll(event.getRoll() + ArmorFlightHandler.currentRoll);
+            }
+        }
+
+        @SubscribeEvent
+        public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
+            Player player = event.getEntity();
+            ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+
+            if (chest.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2) {
+                if (!player.onGround() && chest.getOrCreateTag().getInt("RigPower") > 0) {
+                    
+                    // Lock the body and head to camera to stop vanilla snap-back
+                    player.yBodyRot = player.getYRot();
+                    player.yHeadRot = player.getYRot();
+                    
+                    event.getPoseStack().pushPose();
+
+                    // Pivot from the center of the chest area
+                    event.getPoseStack().translate(0.0D, 1.0D, 0.0D);
+
+                    // 🔥 ONLY APPLY THE ROLL (Z-axis tilt) from the Z/C keys. All W/A/S/D pitch math removed!
+                    if (ArmorFlightHandler.currentRoll != 0.0F) {
+                        event.getPoseStack().mulPose(new org.joml.Quaternionf().fromAxisAngleDeg(new org.joml.Vector3f(0.0f, 0.0f, 1.0f), ArmorFlightHandler.currentRoll));
+                    }
+
+                    event.getPoseStack().translate(0.0D, -1.0D, 0.0D);
+                }
+            }
+        }
+
+        @SubscribeEvent
+        public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
+            Player player = event.getEntity();
+            ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+            if (chest.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2) {
+                if (!player.onGround() && chest.getOrCreateTag().getInt("RigPower") > 0) {
+                    event.getPoseStack().popPose();
+                }
+            }
+        }
 
         @SubscribeEvent
         public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -200,13 +247,30 @@ public class RigMod {
                 ModMessages.sendToServer(new CycleRadarModePacket());
             }
             
-            // 🔥 ADDED: Toggle Stable Mode Logic
             while (KeyBindings.TOGGLE_STABLE_KEY.consumeClick()) {
                 ArmorFlightHandler.isStableMode = !ArmorFlightHandler.isStableMode;
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.player != null) {
                     String state = ArmorFlightHandler.isStableMode ? "§aON" : "§cOFF";
                     mc.player.displayClientMessage(net.minecraft.network.chat.Component.literal("§b[SUIT] Flight Stabilizer: " + state), true);
+                }
+            }
+
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null) {
+                if (ArmorFlightHandler.isFlying) {
+                    float rollSpeed = 2.5F; 
+                    if (KeyBindings.ROTATE_LEFT_KEY.isDown()) {
+                        ArmorFlightHandler.currentRoll += rollSpeed; 
+                    }
+                    if (KeyBindings.ROTATE_RIGHT_KEY.isDown()) {
+                        ArmorFlightHandler.currentRoll -= rollSpeed; 
+                    }
+                } else {
+                    ArmorFlightHandler.currentRoll *= 0.8F; 
+                    if (Math.abs(ArmorFlightHandler.currentRoll) < 0.1F) {
+                        ArmorFlightHandler.currentRoll = 0.0F;
+                    }
                 }
             }
         }

@@ -2,6 +2,7 @@ package com.rigmod.event;
 
 import com.rigmod.RigMod;
 import com.rigmod.item.ModItems;
+import com.rigmod.client.KeyBindings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.particles.ParticleTypes;
@@ -18,8 +19,12 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = RigMod.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ArmorFlightHandler {
 
-    // 🔥 GLOBAL TOGGLE FOR STABLE MODE
+    // Global toggles and state variables
     public static boolean isStableMode = false;
+    
+    // 🔥 NEW: Tracks the exact tilt angle of the player's perspective
+    public static float currentRoll = 0.0f;
+    public static boolean isFlying = false;
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
@@ -41,19 +46,19 @@ public class ArmorFlightHandler {
                     }
                     int currentFuel = tag.getInt("RigPower");
 
-                    // ⛔ DISABLE VANILLA CREATIVE FLIGHT 
+                    // ⛔ DISABLE VANILLA CREATIVE FLIGHT (To allow our custom physics)
                     if (player.getAbilities().mayfly) {
                         player.getAbilities().mayfly = false;
                         player.getAbilities().flying = false;
                         player.onUpdateAbilities();
                     }
 
-                    // 🚀 ASTRONAUT MODE 
-                    if (currentFuel > 0 && !player.onGround() && !player.isInWater()) {
+                    // 🚀 ASTRONAUT MODE (Powered standing flight)
+                    if (currentFuel > 0 && !player.onGround()) {
                         
-                        // 🔥 ROTATION FIX: Forces the player horizontal like an Astronaut!
-                        if (!player.isFallFlying()) {
-                            player.startFallFlying();
+                        // Set flight state for the camera and body locking
+                        if (player.level().isClientSide()) {
+                            isFlying = true;
                         }
 
                         // 1. DRAIN FUEL
@@ -67,22 +72,21 @@ public class ArmorFlightHandler {
                             }
                         }
 
-                        // 2. APPLY PHYSICS 
+                        // 2. APPLY PHYSICS (Client-Side Only)
                         if (player.level().isClientSide()) {
                             ClientPhysics.applyZeroG(player);
                         }
-                    } 
-                    else {
-                        // STAND UP: If on the ground or out of fuel, stand back up!
-                        if (player.isFallFlying()) {
-                            player.stopFallFlying();
+                    } else {
+                        // Reset flight state when landed
+                        if (player.level().isClientSide()) {
+                            isFlying = false; 
                         }
                     }
                 } 
                 else {
-                    if (player.isFallFlying()) {
-                        player.stopFallFlying();
-                    }
+                    // Not wearing flight armor, clean up state
+                    if (player.level().isClientSide()) isFlying = false;
+                    
                     if (player.getAbilities().mayfly) {
                         player.getAbilities().mayfly = false;
                         player.getAbilities().flying = false;
@@ -106,7 +110,7 @@ public class ArmorFlightHandler {
             Vec3 motion = localPlayer.getDeltaMovement();
             Vec3 look = localPlayer.getLookAngle();
             
-            // ANTI-GRAVITY
+            // ANTI-GRAVITY: Counteracts the default downward pull
             double newY = motion.y + 0.075D; 
             double newX = motion.x;
             double newZ = motion.z;
@@ -114,55 +118,57 @@ public class ArmorFlightHandler {
             boolean isThrusting = false;
             double thrustPower = 0.02D; 
 
+            // Calculate precise Left/Right vectors based on Yaw for proper strafing
             float yaw = localPlayer.getYRot() * ((float)Math.PI / 180F);
             double rightX = -Math.cos(yaw);
             double rightZ = -Math.sin(yaw);
 
-            // THRUSTER CONTROLS
+            // MAIN THRUSTER CONTROLS
             if (mc.options.keyJump.isDown()) {
-                newY += thrustPower; 
+                newY += thrustPower; // Up
                 isThrusting = true;
             }
             if (mc.options.keyShift.isDown()) {
-                newY -= thrustPower; 
+                newY -= thrustPower; // Down
                 isThrusting = true;
             }
-            if (mc.options.keyUp.isDown()) { 
+            if (mc.options.keyUp.isDown()) { // W key
                 newX += look.x * thrustPower; 
                 newZ += look.z * thrustPower;
                 isThrusting = true;
             }
-            if (mc.options.keyDown.isDown()) { 
+            if (mc.options.keyDown.isDown()) { // S key
                 newX -= look.x * thrustPower; 
                 newZ -= look.z * thrustPower;
                 isThrusting = true;
             }
-            if (mc.options.keyLeft.isDown()) { 
+            
+            // SIDEWAYS THRUSTER CONTROLS (A and D keys)
+            if (mc.options.keyLeft.isDown()) { // A key
                 newX -= rightX * thrustPower;
                 newZ -= rightZ * thrustPower;
                 isThrusting = true;
             }
-            if (mc.options.keyRight.isDown()) { 
+            if (mc.options.keyRight.isDown()) { // D key
                 newX += rightX * thrustPower;
                 newZ += rightZ * thrustPower;
                 isThrusting = true;
             }
 
-            // 🔥 STABLE MODE vs DRIFT MODE
+            // STABLE MODE vs DRIFT MODE
             if (isStableMode) {
-                // STABLE: Apply strong friction to brake automatically
+                // STABLE: Strong friction for quick braking
                 if (!isThrusting) {
                     newX *= 0.80D; 
                     newZ *= 0.80D;
                 }
-                // STABLE: Lock altitude if not going up or down
+                // STABLE: Altitude locking
                 if (!mc.options.keyJump.isDown() && !mc.options.keyShift.isDown()) {
                     newY = 0.0D; 
-                    // 🔥 THE FIX: Trick the code into thinking we are thrusting so it spawns flames!
-                    isThrusting = true; 
+                    isThrusting = true; // Visual Fix: Keeps flames spawning when hovering
                 }
             } else {
-                // DRIFT: Slide endlessly like ice
+                // DRIFT: Minimal friction for endless momentum
                 if (!isThrusting) {
                     newX *= 0.98D;
                     newZ *= 0.98D;
@@ -193,7 +199,7 @@ public class ArmorFlightHandler {
             double sideX = Math.cos(bodyYaw) * 0.20D;
             double sideZ = Math.sin(bodyYaw) * 0.20D;
             
-            double y = player.getY() + 1.25D; 
+            double y = player.getY() + 1.25D; // Just behind the 3D pack thrusters
 
             double leftX = player.getX() + backwardX - sideX;
             double leftZ = player.getZ() + backwardZ - sideZ;
@@ -204,6 +210,7 @@ public class ArmorFlightHandler {
             double spreadX = (random.nextDouble() - 0.5D) * 0.1D;
             double spreadZ = (random.nextDouble() - 0.5D) * 0.1D;
 
+            // Spawn Particles behind the pack
             player.level().addParticle(ParticleTypes.SOUL_FIRE_FLAME, leftX + spreadX, y, leftZ + spreadZ, 0.0D, -0.15D, 0.0D);
             player.level().addParticle(ParticleTypes.SOUL_FIRE_FLAME, rightX + spreadX, y, rightZ + spreadZ, 0.0D, -0.15D, 0.0D);
             
