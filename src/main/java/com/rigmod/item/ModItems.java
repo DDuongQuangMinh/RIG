@@ -45,6 +45,11 @@ public class ModItems {
     public static final RegistryObject<Item> STANDARD_LEVEL_1_LEGGINGS = ITEMS.register("standard_level_1_legging",
             () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.LEGGINGS, new Item.Properties(), "standard_level_1_legging.png", 1));
 
+    // NEW: Boots
+    public static final RegistryObject<Item> STANDARD_LEVEL_1_BOOTS = ITEMS.register("standard_level_1_boots",
+            () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.BOOTS, new Item.Properties(), "standard_level_1_boots.png", 1));
+
+
     // --- LEVEL 2 ARMOR (Tier 2) ---
     
     // Engineering Level 2 Helmet
@@ -55,9 +60,10 @@ public class ModItems {
     public static final RegistryObject<Item> ENGINEERING_LEVEL_2_CHESTPLATE = ITEMS.register("engineering_level_2_chestplate", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant(), "engineering_level_2_chestplate.png", 2));
 
-    // NEW: Engineering Level 2 Leggings
+    // Engineering Level 2 Leggings
     public static final RegistryObject<Item> ENGINEERING_LEVEL_2_LEGGINGS = ITEMS.register("engineering_level_2_leggings", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant(), "engineering_level_2_leggings.png", 2));
+
 
     // --- LEVEL 3 ARMOR (Tier 3) ---
     

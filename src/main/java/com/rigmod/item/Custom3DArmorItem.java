@@ -10,6 +10,7 @@ import com.rigmod.client.model.EngineeringLevel3HelmetModel;
 import com.rigmod.client.model.EngineeringLevel3ChestplateModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
+import com.rigmod.client.model.StandardLevel1BootsModel; // 🔥 NEW: Imported your boots model!
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.nbt.CompoundTag;
@@ -370,6 +371,16 @@ public class Custom3DArmorItem extends ArmorItem {
                         return customModel1;
                     }
                 }
+
+                // NEW: BOOTS LOGIC
+                if (armorSlot == EquipmentSlot.FEET) {
+                    if (Custom3DArmorItem.this.armorLevel == 1) {
+                        StandardLevel1BootsModel<?> customModel1 = new StandardLevel1BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1BootsModel.LAYER_LOCATION));
+                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
+                        return customModel1;
+                    }
+                }
+
                 return _default;
             }
         });

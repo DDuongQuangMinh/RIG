@@ -67,6 +67,10 @@ public class CraftArmorPacket {
                 else if (index == 5) targetItem = ModItems.BATTERY_LEVEL_6.get();
                 else if (index == 6) targetItem = ModItems.BATTERY_LEVEL_7.get();
             }
+            // 🔥 NEW: BOOTS TAB
+            else if (tab == 4) { 
+                if (index == 0) targetItem = ModItems.STANDARD_LEVEL_1_BOOTS.get();
+            }
 
             if (targetItem == null) return;
 
@@ -104,7 +108,6 @@ public class CraftArmorPacket {
             }
             
             // --- CHESTPLATES ---
-            // 🔥 UPDATED: Level 3 Chestplate Recipe Consumption
             else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get())) {
                 if (hasItem(player, ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get(), 1) && 
                     hasItem(player, Items.NETHERITE_INGOT, 8) && 
@@ -172,6 +175,16 @@ public class CraftArmorPacket {
                     consumeItem(player, ModItems.BATTERY_LEVEL_2.get(), 2);
                     consumeItem(player, Items.DIAMOND, 5);
                     consumeItem(player, Items.IRON_INGOT, 12);
+                    canCraft = true;
+                }
+            }
+
+            // --- BOOTS ---
+            // 🔥 NEW: Level 1 Boots Recipe Logic
+            else if (targetItem.equals(ModItems.STANDARD_LEVEL_1_BOOTS.get())) {
+                if (hasItem(player, Items.QUARTZ, 4) && hasItem(player, Items.REDSTONE, 2)) {
+                    consumeItem(player, Items.QUARTZ, 4);
+                    consumeItem(player, Items.REDSTONE, 2);
                     canCraft = true;
                 }
             }

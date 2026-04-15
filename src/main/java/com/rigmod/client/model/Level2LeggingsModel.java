@@ -23,55 +23,57 @@ public class Level2LeggingsModel<T extends LivingEntity> extends HumanoidModel<T
         MeshDefinition meshdefinition = HumanoidModel.createMesh(CubeDeformation.NONE, 0.0F);
         PartDefinition partdefinition = meshdefinition.getRoot();
 
-        // 1. Define standard dummy humanoid parts so the game doesn't crash
+        // Dummy parts to prevent animation crashes
         partdefinition.addOrReplaceChild("head", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("hat", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("body", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("right_arm", CubeListBuilder.create(), PartPose.ZERO);
         partdefinition.addOrReplaceChild("left_arm", CubeListBuilder.create(), PartPose.ZERO);
 
-        CubeDeformation pantsInflation = new CubeDeformation(0.25F); // Prevents base leg Z-fighting
-        CubeDeformation armorInflation = new CubeDeformation(0.0F);  // Preserves your exact tiny gap
+        // THE FIX: Expand the pants in all directions, but ONLY expand the armor horizontally! 
+        // This stops Z-fighting but stops the plates from growing vertically into each other and eating the gap!
+        CubeDeformation pantsDef = new CubeDeformation(0.25F); 
+        CubeDeformation armorDef = new CubeDeformation(0.26F, 0.0F, 0.26F); 
 
         // ==========================================
-        // RIGHT LEG (Uses Blockbench's "left" group because of the 180 flip)
+        // RIGHT LEG
         // ==========================================
         PartDefinition right_leg = partdefinition.addOrReplaceChild("right_leg", CubeListBuilder.create(), PartPose.offset(-1.9F, 12.0F, 0.0F));
         
-        // THE MAGIC WRAPPER: Translates Vanilla Hip (-1.9, 12, 0) perfectly to Blockbench Floor (0, 24, 0)
-        PartDefinition bb_left = right_leg.addOrReplaceChild("bb_left", CubeListBuilder.create(), PartPose.offset(1.9F, 12.0F, 0.0F));
+        // Wrapper translates Minecraft Hip (-1.9, 12, 0) to your Blockbench Origin (0, 24, 0)
+        PartDefinition bb_right2 = right_leg.addOrReplaceChild("bb_right2", CubeListBuilder.create(), PartPose.offset(1.9F, 12.0F, 0.0F));
 
-        // EXACT Blockbench raw export for the Left Leg pasted inside the wrapper
-        bb_left.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(0, 16).addBox(0.0F, -6.0F, -1.0F, 4.0F, 12.0F, 4.0F, pantsInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, -3.1416F, 0.0F, 3.1416F));
+        // YOUR EXACT BLOCKBENCH EXPORT
+        bb_right2.addOrReplaceChild("base_pants_right", CubeListBuilder.create().texOffs(0, 0).addBox(-4.0F, -12.0F, -2.0F, 4.0F, 12.0F, 4.0F, pantsDef), PartPose.ZERO);
 
-        PartDefinition armor_left = bb_left.addOrReplaceChild("armor_left", CubeListBuilder.create(), PartPose.offset(0.0F, 0.0F, 0.0F));
+        PartDefinition armor_right2 = bb_right2.addOrReplaceChild("armor_right2", CubeListBuilder.create()
+            .texOffs(16, 0).addBox(-4.0F, -5.0F, -2.2F, 3.0F, 3.0F, 1.0F, armorDef)
+            .texOffs(16, 18).addBox(-4.0F, -6.2F, -2.2F, 3.0F, 1.0F, 1.0F, armorDef)
+            .texOffs(16, 13).addBox(-4.2F, -5.0F, -2.2F, 1.0F, 3.0F, 2.0F, armorDef)
+            .texOffs(22, 22).addBox(-4.2F, -6.2F, -2.2F, 1.0F, 1.0F, 2.0F, armorDef), PartPose.ZERO);
 
-        armor_left.addOrReplaceChild("cube_r2", CubeListBuilder.create().texOffs(26, 5).addBox(3.4721F, -5.5564F, -0.5F, 1.0F, 2.0F, 3.0F, armorInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, 3.1416F, 0.0F, -3.098F));
-        armor_left.addOrReplaceChild("cube_r3", CubeListBuilder.create().texOffs(26, 0).addBox(2.2F, -1.2F, -4.2F, 1.0F, 1.0F, 4.0F, armorInflation)
-        .texOffs(16, 0).addBox(2.2F, 0.0F, -4.2F, 1.0F, 4.0F, 4.0F, armorInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, 0.0F, 1.5708F, 0.0F));
-        armor_left.addOrReplaceChild("cube_r4", CubeListBuilder.create().texOffs(26, 15).addBox(3.2F, -1.2F, 0.0F, 1.0F, 1.0F, 3.0F, armorInflation)
-        .texOffs(16, 21).addBox(3.2F, 0.0F, 0.0F, 1.0F, 4.0F, 3.0F, armorInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, -3.1416F, 0.0F, 3.1416F));
+        armor_right2.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(22, 8).addBox(0.0F, -2.0F, -1.0F, 1.0F, 2.0F, 2.0F, armorDef), PartPose.offsetAndRotation(-4.5F, -9.0F, 0.0F, 0.0F, 0.0F, 0.0873F));
 
 
         // ==========================================
-        // LEFT LEG (Uses Blockbench's "right" group because of the 180 flip)
+        // LEFT LEG
         // ==========================================
         PartDefinition left_leg = partdefinition.addOrReplaceChild("left_leg", CubeListBuilder.create(), PartPose.offset(1.9F, 12.0F, 0.0F));
         
-        // THE MAGIC WRAPPER: Translates Vanilla Hip (1.9, 12, 0) perfectly to Blockbench Floor (0, 24, 0)
-        PartDefinition bb_right = left_leg.addOrReplaceChild("bb_right", CubeListBuilder.create(), PartPose.offset(-1.9F, 12.0F, 0.0F));
+        // Wrapper translates Minecraft Hip (1.9, 12, 0) to your Blockbench Origin (0, 24, 0)
+        PartDefinition bb_left = left_leg.addOrReplaceChild("bb_left", CubeListBuilder.create(), PartPose.offset(-1.9F, 12.0F, 0.0F));
 
-        // EXACT Blockbench raw export for the Right Leg pasted inside the wrapper
-        bb_right.addOrReplaceChild("cube_r5", CubeListBuilder.create().texOffs(0, 0).addBox(-4.0F, -6.0F, -1.0F, 4.0F, 12.0F, 4.0F, pantsInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, -3.1416F, 0.0F, 3.1416F));
+        // YOUR EXACT BLOCKBENCH EXPORT
+        bb_left.addOrReplaceChild("base_pants_left", CubeListBuilder.create().texOffs(0, 16).addBox(0.0F, -12.0F, -2.0F, 4.0F, 12.0F, 4.0F, pantsDef), PartPose.ZERO);
 
-        PartDefinition armor_right = bb_right.addOrReplaceChild("armor_right", CubeListBuilder.create(), PartPose.offset(0.0F, 0.0F, 0.0F));
+        PartDefinition armor_left = bb_left.addOrReplaceChild("armor_left", CubeListBuilder.create()
+            .texOffs(16, 4).addBox(1.0F, -5.0F, -2.2F, 3.0F, 3.0F, 1.0F, armorDef)
+            .texOffs(16, 20).addBox(1.0F, -6.2F, -2.2F, 3.0F, 1.0F, 1.0F, armorDef)
+            .texOffs(16, 8).addBox(3.2F, -5.0F, -2.2F, 1.0F, 3.0F, 2.0F, armorDef)
+            .texOffs(16, 22).addBox(3.2F, -6.2F, -2.2F, 1.0F, 1.0F, 2.0F, armorDef), PartPose.ZERO);
 
-        armor_right.addOrReplaceChild("cube_r6", CubeListBuilder.create().texOffs(26, 10).addBox(-4.4731F, -5.6F, -0.5F, 1.0F, 2.0F, 3.0F, armorInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, -3.1416F, 0.0F, 3.098F));
-        armor_right.addOrReplaceChild("cube_r7", CubeListBuilder.create().texOffs(16, 16).addBox(2.2F, -1.2F, 0.2F, 1.0F, 1.0F, 4.0F, armorInflation)
-        .texOffs(16, 8).addBox(2.2F, 0.0F, 0.2F, 1.0F, 4.0F, 4.0F, armorInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, 0.0F, 1.5708F, 0.0F));
-        armor_right.addOrReplaceChild("cube_r8", CubeListBuilder.create().texOffs(16, 28).addBox(-4.2F, -1.2F, 0.0F, 1.0F, 1.0F, 3.0F, armorInflation)
-        .texOffs(24, 21).addBox(-4.2F, 0.0F, 0.0F, 1.0F, 4.0F, 3.0F, armorInflation), PartPose.offsetAndRotation(0.0F, -6.0F, 1.0F, -3.1416F, 0.0F, 3.1416F));
+        armor_left.addOrReplaceChild("cube_r2", CubeListBuilder.create().texOffs(22, 12).addBox(-1.0F, -2.0F, -1.0F, 1.0F, 2.0F, 2.0F, armorDef), PartPose.offsetAndRotation(4.5F, -9.0F, 0.0F, 0.0F, 0.0F, -0.0873F));
 
-        return LayerDefinition.create(meshdefinition, 64, 64);
+        return LayerDefinition.create(meshdefinition, 32, 32);
     }
 }

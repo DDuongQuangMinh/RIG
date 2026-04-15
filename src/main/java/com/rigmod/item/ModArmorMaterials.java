@@ -5,19 +5,20 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 
 import java.util.function.Supplier;
 
 public enum ModArmorMaterials implements ArmorMaterial {
     // LEVEL 1: Iron-ish stats
+    // 🔥 UPDATED: Set repair ingredient to Ingredient.EMPTY
     STANDARD_LEVEL_1("standard_level_1", 15, 9, SoundEvents.ARMOR_EQUIP_IRON, 0.0F, 0.0F, 
-            new int[]{2, 5, 6, 2}, () -> Ingredient.of(ModItems.TITANIUM_INGOT.get())),
+            new int[]{2, 5, 6, 2}, () -> Ingredient.EMPTY),
 
     // LEVEL 2: Exact Netherite stats (Durability 37, Toughness 3.0, Knockback Res 0.1)
+    // 🔥 UPDATED: Set repair ingredient to Ingredient.EMPTY
     LEVEL_2_ENGINEERING("level_2_helmet", 37, 15, SoundEvents.ARMOR_EQUIP_NETHERITE, 3.0F, 0.1F, 
-            new int[]{3, 6, 8, 3}, () -> Ingredient.of(Items.NETHERITE_INGOT));
+            new int[]{3, 6, 8, 3}, () -> Ingredient.EMPTY);
 
     private final String name;
     private final int durabilityMultiplier;
@@ -25,7 +26,7 @@ public enum ModArmorMaterials implements ArmorMaterial {
     private final SoundEvent equipSound;
     private final float toughness;
     private final float knockbackResistance;
-    private final int[] protectionAmounts; // Added to store defense per piece
+    private final int[] protectionAmounts; 
     private final Supplier<Ingredient> repairIngredient;
 
     ModArmorMaterials(String name, int durabilityMultiplier, int enchantability, SoundEvent equipSound, 
