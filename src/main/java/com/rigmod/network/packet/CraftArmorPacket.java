@@ -54,13 +54,14 @@ public class CraftArmorPacket {
                 else if (index == 3) targetItem = ModItems.STANDARD_LEVEL_1_CHEST_BRONZE.get();
             } 
             else if (tab == 2) { // LEGGINGS
-                // 🔥 NEW: Level 3 Leggings are now index 0!
                 if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_3_LEGGINGS.get();
                 else if (index == 1) targetItem = ModItems.ENGINEERING_LEVEL_2_LEGGINGS.get();
                 else if (index == 2) targetItem = ModItems.STANDARD_LEVEL_1_LEGGINGS.get();
             }
             else if (tab == 3) { // BOOTS
-                if (index == 0) targetItem = ModItems.STANDARD_LEVEL_1_BOOTS.get();
+                // 🔥 ADDED: Level 2 Boots mapping
+                if (index == 0) targetItem = ModItems.ENGINEERING_LEVEL_2_BOOTS.get();
+                else if (index == 1) targetItem = ModItems.STANDARD_LEVEL_1_BOOTS.get();
             }
             else if (tab == 4) { // BATTERIES
                 if (index == 0) targetItem = ModItems.BATTERY_LEVEL_1.get();
@@ -120,7 +121,6 @@ public class CraftArmorPacket {
             }
             
             // --- LEGGINGS ---
-            // NEW: Level 3 Leggings Recipe Consumption
             else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_3_LEGGINGS.get())) {
                 if (hasItem(player, ModItems.ENGINEERING_LEVEL_2_LEGGINGS.get(), 1) && hasItem(player, Items.NETHERITE_INGOT, 4) && hasItem(player, ModItems.BATTERY_LEVEL_3.get(), 1) && hasItem(player, Items.DIAMOND, 8)) {
                     consumeItem(player, ModItems.ENGINEERING_LEVEL_2_LEGGINGS.get(), 1); consumeItem(player, Items.NETHERITE_INGOT, 4); consumeItem(player, ModItems.BATTERY_LEVEL_3.get(), 1); consumeItem(player, Items.DIAMOND, 8); canCraft = true;
@@ -138,6 +138,12 @@ public class CraftArmorPacket {
             }
 
             // --- BOOTS ---
+            // 🔥 ADDED: Level 2 Boots Recipe Consumption
+            else if (targetItem.equals(ModItems.ENGINEERING_LEVEL_2_BOOTS.get())) {
+                if (hasItem(player, ModItems.STANDARD_LEVEL_1_BOOTS.get(), 1) && hasItem(player, ModItems.TITANIUM_INGOT.get(), 4) && hasItem(player, ModItems.BATTERY_LEVEL_2.get(), 2) && hasItem(player, Items.IRON_INGOT, 4)) {
+                    consumeItem(player, ModItems.STANDARD_LEVEL_1_BOOTS.get(), 1); consumeItem(player, ModItems.TITANIUM_INGOT.get(), 4); consumeItem(player, ModItems.BATTERY_LEVEL_2.get(), 2); consumeItem(player, Items.IRON_INGOT, 4); canCraft = true;
+                }
+            }
             else if (targetItem.equals(ModItems.STANDARD_LEVEL_1_BOOTS.get())) {
                 if (hasItem(player, Items.QUARTZ, 4) && hasItem(player, Items.REDSTONE, 2)) {
                     consumeItem(player, Items.QUARTZ, 4); consumeItem(player, Items.REDSTONE, 2); canCraft = true;

@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "rigmod:item/engineering_level_2_boots"
+  }
+}

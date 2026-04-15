@@ -24,6 +24,8 @@ public class ModCreativeTabs {
                 output.accept(ModBlocks.RAW_TITANIUM_BLOCK.get());
                 output.accept(ModBlocks.RIG_WORKBENCH.get());
 
+                output.accept(ModItems.UPGRADE_NODE.get());
+
                 output.accept(ModItems.BATTERY_LEVEL_1.get());
                 output.accept(ModItems.BATTERY_LEVEL_2.get());
                 output.accept(ModItems.BATTERY_LEVEL_3.get());
@@ -46,6 +48,7 @@ public class ModCreativeTabs {
                 output.accept(ModItems.ENGINEERING_LEVEL_3_LEGGINGS.get());
 
                 output.accept(ModItems.STANDARD_LEVEL_1_BOOTS.get());
+                output.accept(ModItems.ENGINEERING_LEVEL_2_BOOTS.get());
             })
             .build());
 

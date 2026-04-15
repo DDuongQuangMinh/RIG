@@ -16,7 +16,10 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> RAW_TITANIUM = ITEMS.register("raw_titanium",
-            () -> new Item(new Item.Properties()));   
+            () -> new Item(new Item.Properties()));  
+            
+    public static final RegistryObject<Item> UPGRADE_NODE = ITEMS.register("upgrade_node",
+            () -> new Item(new Item.Properties()));        
             
     // --- BATTERIES ---
     public static final RegistryObject<Item> BATTERY_LEVEL_1 = ITEMS.register("battery_level_1", () -> new Item(new Item.Properties()));        
@@ -77,7 +80,11 @@ public class ModItems {
 
     // Engineering Level 3 Leggings
     public static final RegistryObject<Item> ENGINEERING_LEVEL_3_LEGGINGS = ITEMS.register("engineering_level_3_leggings", 
-            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant(), "engineering_level_3_leggings.png", 3));    
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant(), "engineering_level_3_leggings.png", 3));
+            
+    // Engineering Level 2 Boots
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_BOOTS = ITEMS.register("engineering_level_2_boots",
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant(), "engineering_level_2_boots.png", 2));        
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

@@ -378,7 +378,12 @@ public class Custom3DArmorItem extends ArmorItem {
                 }
 
                 if (armorSlot == EquipmentSlot.FEET) {
-                    if (Custom3DArmorItem.this.armorLevel == 1) {
+                    if (Custom3DArmorItem.this.armorLevel == 2) {
+                        com.rigmod.client.model.EngineeringLevel2BootsModel<?> customModel2 = new com.rigmod.client.model.EngineeringLevel2BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(com.rigmod.client.model.EngineeringLevel2BootsModel.LAYER_LOCATION));
+                        customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
+                        return customModel2;
+                    }
+                    else if (Custom3DArmorItem.this.armorLevel == 1) {
                         StandardLevel1BootsModel<?> customModel1 = new StandardLevel1BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1BootsModel.LAYER_LOCATION));
                         customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
                         return customModel1;

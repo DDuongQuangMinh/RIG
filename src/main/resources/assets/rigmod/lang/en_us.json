@@ -2,6 +2,7 @@
   "item.rigmod.titanium_ingot": "Titanium Ingot",
   "item.rigmod.raw_titanium": "Raw Titanium",
   "block.rigmod.raw_titanium_block": "Raw Titanium Block",
+  "item.rigmod.upgrade_node": "Upgrade Node",
   "item.rigmod.battery_level_1": "Battery Level 1",
   "item.rigmod.battery_level_2": "Battery Level 2",
   "item.rigmod.battery_level_3": "Battery Level 3",
@@ -20,11 +21,12 @@
   "item.rigmod.engineering_level_2_leggings": "Leggings Level 2",
   "item.rigmod.engineering_level_3_leggings": "Leggings Level 3",
   "item.rigmod.standard_level_1_boots": "Boots Level 1",
+  "item.rigmod.engineering_level_2_boots": "Boots Level 2",
   "block.rigmod.rig_workbench": "RIG Workbench",
   "creativetab.rig_tab": "RIG Suit Tech",
   "key.category.rigmod": "RIG Mod Controls",
   "key.rigmod.cycle_vision": "Toggle RIG Visor",
   "key.rigmod.cycle_radar": "Cycle Radar Mode",
-  "key.rigmod.rotate_left": "Yaw Right",
-  "key.rigmod.rotate_right": "Yaw Left"
+  "key.rigmod.rotate_left": "Roll Right",
+  "key.rigmod.rotate_right": "Roll Left"
 }
