@@ -75,6 +75,10 @@ public class ModItems {
     public static final RegistryObject<Item> ENGINEERING_LEVEL_3_CHESTPLATE = ITEMS.register("engineering_level_3_chestplate", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant(), "engineering_level_3_chestplate.png", 3));
 
+    // Engineering Level 3 Leggings
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_3_LEGGINGS = ITEMS.register("engineering_level_3_leggings", 
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant(), "engineering_level_3_leggings.png", 3));    
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

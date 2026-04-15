@@ -18,6 +18,8 @@
   "item.rigmod.engineering_level_3_chestplate": "Engineering Chestplate Level 3",
   "item.rigmod.standard_level_1_legging": "Leggings Level 1",
   "item.rigmod.engineering_level_2_leggings": "Leggings Level 2",
+  "item.rigmod.engineering_level_3_leggings": "Leggings Level 3",
+  "item.rigmod.standard_level_1_boots": "Boots Level 1",
   "block.rigmod.rig_workbench": "RIG Workbench",
   "creativetab.rig_tab": "RIG Suit Tech",
   "key.category.rigmod": "RIG Mod Controls",

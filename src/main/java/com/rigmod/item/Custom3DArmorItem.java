@@ -8,9 +8,10 @@ import com.rigmod.client.Level2ChestplateModel;
 import com.rigmod.client.model.StandardLevel1ChestModel;
 import com.rigmod.client.model.EngineeringLevel3HelmetModel;
 import com.rigmod.client.model.EngineeringLevel3ChestplateModel;
+import com.rigmod.client.model.EngineeringLevel3LeggingsModel; // 🔥 NEW: Imported your Level 3 Leggings model!
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
-import com.rigmod.client.model.StandardLevel1BootsModel; // 🔥 NEW: Imported your boots model!
+import com.rigmod.client.model.StandardLevel1BootsModel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.nbt.CompoundTag;
@@ -265,7 +266,6 @@ public class Custom3DArmorItem extends ArmorItem {
             int power = tag.getInt("RigPower");
 
             // 🔥 WIPE STUCK NBT BUG: Permanently deletes the old 40 health stat from the item file
-            // When this item is put on, it scans and scrubs the broken saved NBT key forever.
             if (tag.contains("AttributeModifiers")) {
                 tag.remove("AttributeModifiers");
             }
@@ -359,12 +359,17 @@ public class Custom3DArmorItem extends ArmorItem {
                 }
 
                 if (armorSlot == EquipmentSlot.LEGS) {
-                    if (Custom3DArmorItem.this.armorLevel == 2) {
+                    // NEW: LEVEL 3 LEGGINGS
+                    if (Custom3DArmorItem.this.armorLevel == 3) {
+                        EngineeringLevel3LeggingsModel<?> customModel3 = new EngineeringLevel3LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3LeggingsModel.LAYER_LOCATION));
+                        customModel3.young = _default.young; customModel3.crouching = _default.crouching; customModel3.riding = _default.riding; customModel3.rightArmPose = _default.rightArmPose; customModel3.leftArmPose = _default.leftArmPose;
+                        return customModel3;
+                    }
+                    else if (Custom3DArmorItem.this.armorLevel == 2) {
                         com.rigmod.client.model.Level2LeggingsModel<?> customModel2 = new com.rigmod.client.model.Level2LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(com.rigmod.client.model.Level2LeggingsModel.LAYER_LOCATION));
                         customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
                         return customModel2;
                     } 
-                    
                     else {
                         StandardLevel1LeggingsModel<?> customModel1 = new StandardLevel1LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
                         customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
@@ -372,7 +377,6 @@ public class Custom3DArmorItem extends ArmorItem {
                     }
                 }
 
-                // NEW: BOOTS LOGIC
                 if (armorSlot == EquipmentSlot.FEET) {
                     if (Custom3DArmorItem.this.armorLevel == 1) {
                         StandardLevel1BootsModel<?> customModel1 = new StandardLevel1BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1BootsModel.LAYER_LOCATION));

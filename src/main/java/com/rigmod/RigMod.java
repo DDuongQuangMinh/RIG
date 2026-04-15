@@ -176,6 +176,7 @@ public class RigMod {
             event.registerLayerDefinition(StandardLevel1ChestModel.LAYER_LOCATION, StandardLevel1ChestModel::createBodyLayer);
             event.registerLayerDefinition(com.rigmod.client.model.Level2LeggingsModel.LAYER_LOCATION, com.rigmod.client.model.Level2LeggingsModel::createBodyLayer);
             event.registerLayerDefinition(com.rigmod.client.model.StandardLevel1BootsModel.LAYER_LOCATION, com.rigmod.client.model.StandardLevel1BootsModel::createBodyLayer);
+            event.registerLayerDefinition(com.rigmod.client.model.EngineeringLevel3LeggingsModel.LAYER_LOCATION, com.rigmod.client.model.EngineeringLevel3LeggingsModel::createBodyLayer);
         }
 
         @SubscribeEvent
