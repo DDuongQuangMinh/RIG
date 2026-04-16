@@ -1,10 +1,11 @@
 package com.rigmod.network;
 
 import com.rigmod.RigMod;
+import com.rigmod.network.packet.ApplyNodePacket;
 import com.rigmod.network.packet.CraftArmorPacket;
 import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.network.packet.CycleVisionModePacket;
-import com.rigmod.network.packet.SyncWorkbenchModePacket; // ✅ NEW: Import added!
+import com.rigmod.network.packet.SyncWorkbenchModePacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
@@ -50,12 +51,19 @@ public class ModMessages {
                 .consumerMainThread(SyncWorkbenchModePacket::handle)
                 .add();
 
-        // ✅ Register the new Recharge Packet!
+        // Register the new Recharge Packet!
         net.messageBuilder(com.rigmod.network.packet.RechargeArmorPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(com.rigmod.network.packet.RechargeArmorPacket::new)
                 .encoder(com.rigmod.network.packet.RechargeArmorPacket::toBytes)
                 .consumerMainThread(com.rigmod.network.packet.RechargeArmorPacket::handle)
                 .add();
+
+        // FIXED: Swapped decoder and encoder to the correct methods!
+        net.messageBuilder(ApplyNodePacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(ApplyNodePacket::new)
+                .encoder(ApplyNodePacket::toBytes)
+                .consumerMainThread(ApplyNodePacket::handle)
+                .add();        
     }
 
     public static <MSG> void sendToServer(MSG message) {

@@ -38,7 +38,7 @@ public class RechargeArmorPacket {
             if (!(chestplate.getItem() instanceof Custom3DArmorItem)) return;
 
             // ==========================================
-            // 🔥 THE POWER CHART
+            // THE POWER CHART
             // ==========================================
             Item targetBattery = null;
             int powerAmount = 0;
@@ -65,13 +65,22 @@ public class RechargeArmorPacket {
             }
 
             if (slot != -1) {
+                // READ NODE UNLOCKS TO DETERMINE MAX POWER
+                boolean hasCap1 = chestplate.getOrCreateTag().getBoolean("RigNode_5");
+                boolean hasCap2 = chestplate.getOrCreateTag().getBoolean("RigNode_11");
+                
+                // Dynamically set Max Power (100 -> 150 -> 200)
+                int maxPower = 100 + (hasCap1 ? 50 : 0) + (hasCap2 ? 50 : 0);
+
                 int currentPower = chestplate.getOrCreateTag().getInt("RigPower");
-                if (currentPower < 100) {
+                
+                // FIXED: Check against dynamic maxPower instead of hardcoded 100
+                if (currentPower < maxPower) {
                     // Consume 1 battery
                     player.getInventory().getItem(slot).shrink(1);
                     
-                    // Add power (Cap at 100%)
-                    int newPower = Math.min(100, currentPower + powerAmount);
+                    // Add power (Cap at dynamic maxPower instead of 100)
+                    int newPower = Math.min(maxPower, currentPower + powerAmount);
                     chestplate.getOrCreateTag().putInt("RigPower", newPower);
 
                     // Sound & Feedback
@@ -82,6 +91,7 @@ public class RechargeArmorPacket {
                 player.displayClientMessage(net.minecraft.network.chat.Component.literal("§c[RIG Matrix] You do not have the selected Power Core in your inventory!"), true);
             }
         });
+        context.setPacketHandled(true);
         return true;
     }
 }

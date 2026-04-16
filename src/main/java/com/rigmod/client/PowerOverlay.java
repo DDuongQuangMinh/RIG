@@ -1,8 +1,7 @@
 package com.rigmod.client;
 
 import com.rigmod.RigMod;
-import com.rigmod.item.Custom3DArmorItem; // 🔥 Don't forget this import!
-import com.rigmod.item.ModItems;
+import com.rigmod.item.Custom3DArmorItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -21,7 +20,7 @@ public class PowerOverlay {
     @SubscribeEvent
     public static void onRenderHUD(RenderGuiOverlayEvent.Post event) {
         
-        // ✅ Wait for the FOOD bar to finish drawing, not the armor!
+        // Wait for the FOOD bar to finish drawing so we can build on top of it
         if (event.getOverlay() != VanillaGuiOverlay.FOOD_LEVEL.type()) {
             return;
         }
@@ -30,7 +29,6 @@ public class PowerOverlay {
         Player player = minecraft.player;
         if (player == null) return;
 
-        // 🔥 THE FIX: Now checks if they are wearing ANY powered armor (Level 2 or Level 3)
         ItemStack chestplate = player.getItemBySlot(EquipmentSlot.CHEST);
         if (!(chestplate.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2)) {
             return; 
@@ -40,27 +38,28 @@ public class PowerOverlay {
         int width = event.getWindow().getGuiScaledWidth();
         int height = event.getWindow().getGuiScaledHeight();
 
-        // Get Power
+        // Get Power & Max Power
         int power = chestplate.getOrCreateTag().getInt("RigPower");
+        boolean hasCap1 = chestplate.getOrCreateTag().getBoolean("RigNode_5");
+        boolean hasCap2 = chestplate.getOrCreateTag().getBoolean("RigNode_11");
+        int maxPower = 100 + (hasCap1 ? 50 : 0) + (hasCap2 ? 50 : 0);
         
-        // 🔥 NEON CYAN COLOR 
         int neonColor = 0xFF00E5FF; 
 
         // ==========================================
-        // 🔋 THE DYNAMIC HUD POWER BAR (RIGHT SIDE)
+        // THE DYNAMIC HUD POWER BAR (RIGHT SIDE)
         // ==========================================
         int barWidth = 81; // Exactly the width of 10 vanilla food icons
-        int barHeight = 5; // Same thickness as the Minecraft EXP bar
+        int barHeight = 5; // Thickness
 
-        // X: Aligned perfectly with the left edge of the hunger bar
         int x = (width / 2) + 10; 
 
-        // Y: DYNAMIC CALCULATION
         ForgeGui gui = (ForgeGui) minecraft.gui;
         
-        // Because we waited for the Food Level to draw, gui.rightHeight already includes the hunger bar!
-        // We just draw our bar right above it.
-        int y = height - gui.rightHeight - barHeight; 
+        // THE FIX: Draw exactly where the Armor bar draws on the left side!
+        // gui.rightHeight is exactly at the Armor Bar level here. 
+        // We add +2 to vertically center our 5px bar perfectly inside the row!
+        int y = height - gui.rightHeight + 2; 
 
         // 1. Draw the Black Border
         guiGraphics.fill(x - 1, y - 1, x + barWidth + 1, y + barHeight + 1, 0xFF000000);
@@ -70,11 +69,11 @@ public class PowerOverlay {
 
         // 3. Draw the Colored Power Fill
         if (power > 0) {
-            int fillWidth = (int) ((power / 100.0f) * barWidth);
-            guiGraphics.fill(x, y, x + fillWidth, y + barHeight, neonColor);
+            int fillWidth = (int) (((float) power / maxPower) * barWidth);
+            guiGraphics.fill(x, y, x + Math.min(fillWidth, barWidth), y + barHeight, neonColor);
         }
 
-        // Push the RIGHT height up so things like air bubbles don't overlap our bar!
-        gui.rightHeight += (barHeight + 2);
+        // Push the UI row height up by 10 (a full row) so things like Air Bubbles draw above us!
+        gui.rightHeight += 10;
     }
 }
