@@ -12,7 +12,7 @@
       "args": "--launchTarget forgeclientuserdev --version MOD_DEV --assetIndex 5 --assetsDir \"C:\\Users\\Max Riddle\\.gradle\\caches\\forge_gradle\\assets\" --gameDir . --fml.forgeVersion 47.4.2 --fml.mcVersion 1.20.1 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20230612.114412",
       "env": {
         "MOD_CLASSES": "rigmod%%${workspaceFolder}\\build\\resources\\main;rigmod%%${workspaceFolder}\\build\\classes\\java\\main",
-        "MCP_MAPPINGS": "parchment_2023.06.26-1.20.1"
+        "MCP_MAPPINGS": "official_1.20.1"
       },
       "preLaunchTask": "prepareRunClientCompile"
     },
@@ -27,7 +27,7 @@
       "args": "--launchTarget forgedatauserdev --assetIndex 5 --assetsDir \"C:\\Users\\Max Riddle\\.gradle\\caches\\forge_gradle\\assets\" --gameDir . --fml.forgeVersion 47.4.2 --fml.mcVersion 1.20.1 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20230612.114412 --mod rigmod --all --output \"E:\\Minecraft Design\\Minecraft Mod\\Rigmod\\rigmod\\RIG\\src\\generated\\resources\" --existing \"E:\\Minecraft Design\\Minecraft Mod\\Rigmod\\rigmod\\RIG\\src\\main\\resources\"",
       "env": {
         "MOD_CLASSES": "rigmod%%${workspaceFolder}\\build\\resources\\main;rigmod%%${workspaceFolder}\\build\\classes\\java\\main",
-        "MCP_MAPPINGS": "parchment_2023.06.26-1.20.1"
+        "MCP_MAPPINGS": "official_1.20.1"
       },
       "preLaunchTask": "prepareRunDataCompile"
     },
@@ -42,7 +42,7 @@
       "args": "--launchTarget forgegametestserveruserdev --gameDir . --fml.forgeVersion 47.4.2 --fml.mcVersion 1.20.1 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20230612.114412",
       "env": {
         "MOD_CLASSES": "rigmod%%${workspaceFolder}\\build\\resources\\main;rigmod%%${workspaceFolder}\\build\\classes\\java\\main",
-        "MCP_MAPPINGS": "parchment_2023.06.26-1.20.1"
+        "MCP_MAPPINGS": "official_1.20.1"
       },
       "preLaunchTask": "prepareRunGameTestServerCompile"
     },
@@ -57,7 +57,7 @@
       "args": "--launchTarget forgeserveruserdev --gameDir . --fml.forgeVersion 47.4.2 --fml.mcVersion 1.20.1 --fml.forgeGroup net.minecraftforge --fml.mcpVersion 20230612.114412 --nogui",
       "env": {
         "MOD_CLASSES": "rigmod%%${workspaceFolder}\\build\\resources\\main;rigmod%%${workspaceFolder}\\build\\classes\\java\\main",
-        "MCP_MAPPINGS": "parchment_2023.06.26-1.20.1"
+        "MCP_MAPPINGS": "official_1.20.1"
       },
       "preLaunchTask": "prepareRunServerCompile"
     }

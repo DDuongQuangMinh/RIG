@@ -1,0 +1,6 @@
+{
+  "parent": "builtin/entity",
+  "textures": {
+    "particle": "rigmod:item/plasma_cutter"
+  }
+}

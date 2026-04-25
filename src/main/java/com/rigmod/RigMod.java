@@ -14,14 +14,17 @@ import com.rigmod.client.KeyBindings;
 import com.rigmod.client.RigWorkbenchModel;
 import com.rigmod.client.RigWorkbenchRenderer;
 import com.rigmod.client.RigWorkbenchScreen;
+import com.rigmod.client.renderer.PlasmaBulletRenderer; // 🔥 NEW: Imported your bullet renderer
 import com.rigmod.item.Custom3DArmorItem;
 import com.rigmod.item.ModItems;
 import com.rigmod.item.ModCreativeTabs;
 import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CycleVisionModePacket;
 import com.rigmod.network.packet.CycleRadarModePacket;
+import com.rigmod.network.packet.ReloadWeaponPacket;
 import com.rigmod.block.ModBlocks;
 import com.rigmod.blockentity.ModBlockEntities;
+import com.rigmod.entity.ModEntities; // 🔥 NEW: Imported your Entities registry
 import com.rigmod.menu.ModMenuTypes;
 import com.rigmod.event.ArmorFlightHandler; 
 
@@ -62,6 +65,9 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 import org.slf4j.Logger;
 
+// GECKOLIB IMPORT
+import software.bernie.geckolib.GeckoLib;
+
 @Mod(RigMod.MODID)
 public class RigMod {
 
@@ -69,6 +75,9 @@ public class RigMod {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public RigMod() {
+        // INITIALIZE GECKOLIB FIRST
+        GeckoLib.initialize();
+
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModItems.register(modEventBus);
@@ -76,6 +85,9 @@ public class RigMod {
         ModBlockEntities.register(modEventBus);
         ModMenuTypes.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
+        
+        // NEW: Register your custom Entities!
+        ModEntities.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
@@ -183,6 +195,9 @@ public class RigMod {
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerBlockEntityRenderer(ModBlockEntities.RIG_WORKBENCH_BE.get(), RigWorkbenchRenderer::new);
+            
+            // 🔥 NEW: Register the Renderer for your Plasma Bullet Entity!
+            event.registerEntityRenderer(ModEntities.PLASMA_BULLET.get(), PlasmaBulletRenderer::new);
         }
 
         @SubscribeEvent
@@ -198,6 +213,7 @@ public class RigMod {
             event.register(KeyBindings.TOGGLE_STABLE_KEY); 
             event.register(KeyBindings.ROTATE_LEFT_KEY); 
             event.register(KeyBindings.ROTATE_RIGHT_KEY); 
+            event.register(KeyBindings.RELOAD_KEY);
         }
     }
 
@@ -211,7 +227,6 @@ public class RigMod {
             }
         }
 
-        // 🔥 FIX: Completely deleted the forward pitch lean!
         @SubscribeEvent
         public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
             Player player = event.getEntity();
@@ -226,7 +241,6 @@ public class RigMod {
                     event.getPoseStack().pushPose();
                     event.getPoseStack().translate(0.0D, 1.0D, 0.0D); 
 
-                    // Only apply Z-Axis Roll
                     if (ArmorFlightHandler.currentRoll != 0.0F) {
                         event.getPoseStack().mulPose(new org.joml.Quaternionf().fromAxisAngleDeg(new org.joml.Vector3f(0.0f, 0.0f, 1.0f), ArmorFlightHandler.currentRoll));
                     }
@@ -254,6 +268,10 @@ public class RigMod {
             }
             while (KeyBindings.CYCLE_RADAR_KEY.consumeClick()) {
                 ModMessages.sendToServer(new CycleRadarModePacket());
+            }
+            
+            while (KeyBindings.RELOAD_KEY.consumeClick()) {
+                ModMessages.sendToServer(new ReloadWeaponPacket());
             }
             
             while (KeyBindings.TOGGLE_STABLE_KEY.consumeClick()) {

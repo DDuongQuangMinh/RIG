@@ -5,7 +5,12 @@ import com.rigmod.network.packet.ApplyNodePacket;
 import com.rigmod.network.packet.CraftArmorPacket;
 import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.network.packet.CycleVisionModePacket;
+import com.rigmod.network.packet.FireWeaponPacket;
 import com.rigmod.network.packet.SyncWorkbenchModePacket;
+// 🔥 NEW IMPORTS FOR THE PLASMA CUTTER
+import com.rigmod.network.packet.RotateBladePacket;
+import com.rigmod.network.packet.ReloadWeaponPacket;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
@@ -64,6 +69,26 @@ public class ModMessages {
                 .encoder(ApplyNodePacket::toBytes)
                 .consumerMainThread(ApplyNodePacket::handle)
                 .add();        
+                
+        // NEW: Register Plasma Cutter Blade Rotation
+        net.messageBuilder(RotateBladePacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(RotateBladePacket::new)
+                .encoder(RotateBladePacket::toBytes)
+                .consumerMainThread(RotateBladePacket::handle)
+                .add();
+
+        // NEW: Register Plasma Cutter Reload
+        net.messageBuilder(ReloadWeaponPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(ReloadWeaponPacket::new)
+                .encoder(ReloadWeaponPacket::toBytes)
+                .consumerMainThread(ReloadWeaponPacket::handle)
+                .add();
+
+        net.messageBuilder(FireWeaponPacket.class, id(), NetworkDirection.PLAY_TO_SERVER)
+                .decoder(FireWeaponPacket::new)
+                .encoder(FireWeaponPacket::toBytes)
+                .consumerMainThread(FireWeaponPacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

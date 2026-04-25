@@ -1,7 +1,7 @@
 package com.rigmod.item;
 
 import com.rigmod.RigMod;
-import com.rigmod.block.ModBlocks; // NEW: Import your blocks!
+import com.rigmod.block.ModBlocks;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -49,6 +49,10 @@ public class ModCreativeTabs {
 
                 output.accept(ModItems.STANDARD_LEVEL_1_BOOTS.get());
                 output.accept(ModItems.ENGINEERING_LEVEL_2_BOOTS.get());
+
+                // Add Gun & Ammo
+                output.accept(ModItems.PLASMA_CUTTER.get());
+                output.accept(ModItems.PLASMA_ENERGY.get()); // NEW: Added your custom ammo here!
             })
             .build());
 

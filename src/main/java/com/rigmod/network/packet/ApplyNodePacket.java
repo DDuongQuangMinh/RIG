@@ -1,6 +1,8 @@
 package com.rigmod.network.packet;
 
 import com.rigmod.item.ModItems;
+import com.rigmod.item.Custom3DArmorItem;
+import com.rigmod.item.PlasmaCutterItem;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -13,7 +15,7 @@ import java.util.function.Supplier;
 
 public class ApplyNodePacket {
     private final int nodeId;
-    private final int targetSlot; // 🔥 NEW: Tracks which inventory slot the suit is in!
+    private final int targetSlot; 
 
     public ApplyNodePacket(int nodeId, int targetSlot) {
         this.nodeId = nodeId;
@@ -36,37 +38,53 @@ public class ApplyNodePacket {
             ServerPlayer player = context.getSender();
             if (player == null) return;
 
-            // 🔥 1. Find the exact suit the player selected
-            ItemStack targetSuit = ItemStack.EMPTY;
+            ItemStack targetGear = ItemStack.EMPTY;
             if (targetSlot == -100) {
-                targetSuit = player.getItemBySlot(EquipmentSlot.CHEST); // -100 means "Equipped"
-            } else {
-                targetSuit = player.getInventory().getItem(targetSlot); // Pull from inventory slot
+                targetGear = player.getItemBySlot(EquipmentSlot.CHEST); 
+            } else if (targetSlot >= 0 && targetSlot < player.getInventory().getContainerSize()) {
+                targetGear = player.getInventory().getItem(targetSlot); 
             }
 
-            if (!(targetSuit.getItem() instanceof com.rigmod.item.Custom3DArmorItem)) return;
+            if (targetGear.isEmpty() || (!(targetGear.getItem() instanceof Custom3DArmorItem) && !(targetGear.getItem() instanceof PlasmaCutterItem))) {
+                return;
+            }
 
-            // 🔥 2. Find the Upgrade Node in the player's inventory
             int nodeSlot = -1;
             for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                if (player.getInventory().getItem(i).getItem() == ModItems.UPGRADE_NODE.get()) {
+                ItemStack checkStack = player.getInventory().getItem(i);
+                if (checkStack.getItem() == ModItems.UPGRADE_NODE.get() && !checkStack.isEmpty()) {
                     nodeSlot = i;
                     break;
                 }
             }
 
             if (nodeSlot != -1) {
-                // Consume 1 Node
-                player.getInventory().getItem(nodeSlot).shrink(1);
-                if (player.getInventory().getItem(nodeSlot).isEmpty()) {
+                // 1. Physically consume 1 Node safely
+                ItemStack nodeStack = player.getInventory().getItem(nodeSlot);
+                nodeStack.shrink(1);
+                if (nodeStack.isEmpty()) {
                     player.getInventory().setItem(nodeSlot, ItemStack.EMPTY);
                 }
 
-                // Permanently save the Upgrade to the target suit's NBT!
-                targetSuit.getOrCreateTag().putBoolean("RigNode_" + nodeId, true);
+                // 2. Permanently save the Upgrade to the target gear's NBT
+                targetGear.getOrCreateTag().putBoolean("RigNode_" + nodeId, true);
+                
+                // 3. 🔥 THE FIX: Forcefully re-insert the item so the server registers the NBT change!
+                if (targetSlot == -100) {
+                    player.setItemSlot(EquipmentSlot.CHEST, targetGear);
+                } else {
+                    player.getInventory().setItem(targetSlot, targetGear);
+                }
 
-                // Play the satisfying mechanical success sound
-                player.level().playSound(null, player.blockPosition(), SoundEvents.UI_BUTTON_CLICK.get(), SoundSource.PLAYERS, 1.0F, 1.2F);
+                // 4. 🔥 THE FIX: Force the server to sync the currently open Workbench container!
+                player.getInventory().setChanged();
+                if (player.containerMenu != null) {
+                    player.containerMenu.broadcastChanges();
+                }
+                player.inventoryMenu.broadcastChanges();
+
+                // 5. Play Sound
+                player.level().playSound(null, player.blockPosition(), SoundEvents.SMITHING_TABLE_USE, SoundSource.PLAYERS, 1.0F, 1.5F);
             }
         });
         

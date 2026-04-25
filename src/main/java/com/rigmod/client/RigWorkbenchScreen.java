@@ -3,6 +3,7 @@ package com.rigmod.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.rigmod.item.ModItems;
 import com.rigmod.item.Custom3DArmorItem;
+import com.rigmod.item.PlasmaCutterItem;
 import com.rigmod.menu.RigWorkbenchMenu;
 import com.rigmod.network.ModMessages;
 import com.rigmod.network.packet.CraftArmorPacket;
@@ -31,7 +32,7 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
 
     private int mainMode = 0; 
     private int subMode = 0; 
-    private int treeMode = 0; // 0 = Suit Selection List, 1 = Node Tree
+    private int treeMode = 0; 
     
     private Button craftButton;
     private Button rechargeButton;
@@ -50,13 +51,13 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
     private int batteryStartIndex = 0;
     private int selectedBatteryIndex = -1; 
     
-    private static class SuitEntry {
+    private static class GearEntry {
         ItemStack stack;
         int slot;
-        public SuitEntry(ItemStack stack, int slot) { this.stack = stack; this.slot = slot; }
+        public GearEntry(ItemStack stack, int slot) { this.stack = stack; this.slot = slot; }
     }
-    private List<SuitEntry> availableSuits = new ArrayList<>();
-    private int selectedSuitListIndex = 0;
+    private List<GearEntry> availableGear = new ArrayList<>();
+    private int selectedGearListIndex = 0;
 
     private static class UpgradeNode {
         int id, x, y;
@@ -130,63 +131,98 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
     }
 
     private void refreshAvailableSuits() {
-        availableSuits.clear();
+        availableGear.clear();
         Player player = Minecraft.getInstance().player;
         
         ItemStack equippedChest = player.getItemBySlot(EquipmentSlot.CHEST);
         if (equippedChest.getItem() instanceof Custom3DArmorItem armor && armor.getType() == ArmorItem.Type.CHESTPLATE) {
-            availableSuits.add(new SuitEntry(equippedChest, -100));
+            availableGear.add(new GearEntry(equippedChest, -100));
+        }
+        
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.getItem() instanceof PlasmaCutterItem) {
+            availableGear.add(new GearEntry(mainHand, player.getInventory().selected));
         }
 
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack stack = inv.getItem(i);
             if (stack.getItem() instanceof Custom3DArmorItem armor && armor.getType() == ArmorItem.Type.CHESTPLATE) {
-                availableSuits.add(new SuitEntry(stack, i));
+                availableGear.add(new GearEntry(stack, i));
+            } else if (stack.getItem() instanceof PlasmaCutterItem && stack != mainHand) {
+                availableGear.add(new GearEntry(stack, i));
             }
         }
         
-        if (selectedSuitListIndex >= availableSuits.size()) selectedSuitListIndex = 0;
+        if (selectedGearListIndex >= availableGear.size()) selectedGearListIndex = 0;
     }
 
     private void loadSuitNodes() {
-        if (availableSuits.isEmpty() || selectedSuitListIndex >= availableSuits.size()) return;
-        SuitEntry entry = availableSuits.get(selectedSuitListIndex);
-        Custom3DArmorItem customArmor = (Custom3DArmorItem) entry.stack.getItem();
-        int armorLvl = customArmor.getArmorLevel();
+        if (availableGear.isEmpty() || selectedGearListIndex >= availableGear.size()) return;
+        GearEntry entry = availableGear.get(selectedGearListIndex);
+        Item itemType = entry.stack.getItem();
         
-        if (armorLvl == 1) {
+        if (itemType instanceof Custom3DArmorItem customArmor) {
+            int armorLvl = customArmor.getArmorLevel();
+            if (armorLvl == 1) {
+                currentSuitNodes = new UpgradeNode[]{
+                    new UpgradeNode(0, 15, 65, "RIG", true, 1),
+                    new UpgradeNode(1, 45, 65, "HP", false, 4),
+                    new UpgradeNode(4, 75, 65, "", false, 5),
+                    new UpgradeNode(5, 105, 65, "PWR", false)
+                };
+            } else if (armorLvl == 2) {
+                currentSuitNodes = new UpgradeNode[]{
+                    new UpgradeNode(0, 15, 65, "RIG", true, 1),
+                    new UpgradeNode(1, 45, 65, "HP", false, 2, 4),
+                    new UpgradeNode(2, 75, 65, "", false, 3),
+                    new UpgradeNode(3, 105, 65, "ARM", false),
+                    new UpgradeNode(4, 45, 45, "", false, 5),
+                    new UpgradeNode(5, 75, 45, "PWR", false, 6),
+                    new UpgradeNode(6, 105, 45, "SPD", false)
+                };
+            } else if (armorLvl >= 3) {
+                currentSuitNodes = new UpgradeNode[]{
+                    new UpgradeNode(0, 15, 65, "RIG", true, 1),
+                    new UpgradeNode(1, 45, 65, "HP", false, 2, 4, 7),
+                    new UpgradeNode(2, 75, 65, "", false, 3),
+                    new UpgradeNode(3, 105, 65, "ARM", false, 10),
+                    new UpgradeNode(4, 45, 45, "", false, 5),
+                    new UpgradeNode(5, 75, 45, "PWR", false, 6),
+                    new UpgradeNode(6, 105, 45, "SPD", false),
+                    new UpgradeNode(7, 45, 85, "HP", false, 8),
+                    new UpgradeNode(8, 75, 85, "", false, 9),
+                    new UpgradeNode(9, 105, 85, "SP1", false),
+                    new UpgradeNode(10, 135, 65, "", false, 11),
+                    new UpgradeNode(11, 165, 65, "CAP", false, 12),
+                    new UpgradeNode(12, 195, 65, "ARM", false)
+                };
+            }
+        } else if (itemType instanceof PlasmaCutterItem) {
             currentSuitNodes = new UpgradeNode[]{
-                new UpgradeNode(0, 15, 65, "RIG", true, 1),
-                new UpgradeNode(1, 45, 65, "HP", false, 4),
-                new UpgradeNode(4, 75, 65, "", false, 5),
-                new UpgradeNode(5, 105, 65, "PWR", false)
-            };
-        } else if (armorLvl == 2) {
-            currentSuitNodes = new UpgradeNode[]{
-                new UpgradeNode(0, 15, 65, "RIG", true, 1),
-                new UpgradeNode(1, 45, 65, "HP", false, 2, 4),
-                new UpgradeNode(2, 75, 65, "", false, 3),
-                new UpgradeNode(3, 105, 65, "ARM", false),
-                new UpgradeNode(4, 45, 45, "", false, 5),
-                new UpgradeNode(5, 75, 45, "PWR", false, 6),
-                new UpgradeNode(6, 105, 45, "SPD", false)
-            };
-        } else if (armorLvl >= 3) {
-            currentSuitNodes = new UpgradeNode[]{
-                new UpgradeNode(0, 15, 65, "RIG", true, 1),
-                new UpgradeNode(1, 45, 65, "HP", false, 2, 4, 7),
-                new UpgradeNode(2, 75, 65, "", false, 3),
-                new UpgradeNode(3, 105, 65, "ARM", false, 10),
-                new UpgradeNode(4, 45, 45, "", false, 5),
-                new UpgradeNode(5, 75, 45, "PWR", false, 6),
-                new UpgradeNode(6, 105, 45, "SPD", false),
-                new UpgradeNode(7, 45, 85, "HP", false, 8),
-                new UpgradeNode(8, 75, 85, "", false, 9),
-                new UpgradeNode(9, 105, 85, "SP1", false),
-                new UpgradeNode(10, 135, 65, "", false, 11),
-                new UpgradeNode(11, 165, 65, "CAP", false, 12),
-                new UpgradeNode(12, 195, 65, "ARM", false)
+                new UpgradeNode(0, -25, 75, "START", true, 1),
+                new UpgradeNode(1, 0, 75, "DMG", false, 0, 5),
+                new UpgradeNode(2, 30, 0, "ROF", false, 3, 7),
+                new UpgradeNode(3, 30, 25, "ROF", false, 2, 4, 8),
+                new UpgradeNode(4, 30, 50, "CAP", false, 3, 5, 9),
+                new UpgradeNode(5, 30, 75, "CAP", false, 1, 4, 6, 10),
+                new UpgradeNode(6, 30, 100, "CAP", false, 5, 11),
+                new UpgradeNode(7, 60, 0, "SP1", false, 2, 8),
+                new UpgradeNode(8, 60, 25, "REL", false, 3, 7, 9),
+                new UpgradeNode(9, 60, 50, "DMG", false, 4, 8, 10, 13),
+                new UpgradeNode(10, 60, 75, "REL", false, 5, 9, 11, 14),
+                new UpgradeNode(11, 60, 100, "CAP", false, 6, 10),
+                new UpgradeNode(12, 90, 25, "DMG", false, 13),
+                new UpgradeNode(13, 90, 50, "REL", false, 9, 12, 14, 17),
+                new UpgradeNode(14, 90, 75, "DMG", false, 10, 13, 15, 18),
+                new UpgradeNode(15, 90, 100, "DMG", false, 14, 16, 19),
+                new UpgradeNode(16, 90, 150, "CAP", false, 15, 21),
+                new UpgradeNode(17, 120, 50, "SP2", false, 13, 18),
+                new UpgradeNode(18, 120, 75, "CAP", false, 14, 17, 19, 22),
+                new UpgradeNode(19, 120, 100, "ROF", false, 15, 18, 20),
+                new UpgradeNode(20, 120, 125, "SP3", false, 19, 21),
+                new UpgradeNode(21, 120, 150, "CAP", false, 16, 20),
+                new UpgradeNode(22, 150, 75, "CAP", false, 18)
             };
         }
 
@@ -219,7 +255,7 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         }).bounds(x + 58, y + 225, 100, 20).build()); 
 
         this.upgradeSuitButton = addRenderableWidget(Button.builder(Component.literal("Upgrade"), button -> {
-            if (!availableSuits.isEmpty()) {
+            if (!availableGear.isEmpty()) {
                 loadSuitNodes();
                 treeMode = 1; 
                 selectedUpgradeNode = -1;
@@ -240,11 +276,21 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             for (UpgradeNode n : currentSuitNodes) {
                 if (n.id == selectedUpgradeNode) { targetNode = n; break; }
             }
-            if (targetNode != null && !targetNode.purchased && isNodeReachable(selectedUpgradeNode) && !availableSuits.isEmpty()) {
+            
+            if (targetNode != null && !targetNode.purchased && isNodeReachable(selectedUpgradeNode) && !availableGear.isEmpty()) {
                 targetNode.purchased = true; 
-                availableSuits.get(selectedSuitListIndex).stack.getOrCreateTag().putBoolean("RigNode_" + selectedUpgradeNode, true); 
+                availableGear.get(selectedGearListIndex).stack.getOrCreateTag().putBoolean("RigNode_" + selectedUpgradeNode, true); 
                 
-                int targetSlot = availableSuits.get(selectedSuitListIndex).slot;
+                Player player = Minecraft.getInstance().player;
+                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                    ItemStack invStack = player.getInventory().getItem(i);
+                    if (invStack.getItem() == ModItems.UPGRADE_NODE.get()) {
+                        invStack.shrink(1);
+                        break;
+                    }
+                }
+
+                int targetSlot = availableGear.get(selectedGearListIndex).slot;
                 ModMessages.sendToServer(new ApplyNodePacket(selectedUpgradeNode, targetSlot));
                 
                 Minecraft.getInstance().player.playSound(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.get(), 1.0F, 1.2F);
@@ -291,10 +337,16 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
 
     private boolean isNodeReachable(int targetId) {
         if (targetId == 0) return true; 
+        
         for (UpgradeNode node : currentSuitNodes) {
             if (node.purchased) {
                 for (int link : node.links) {
                     if (link == targetId) return true;
+                }
+            } 
+            if (node.id == targetId) {
+                for (int link : node.links) {
+                    if (hasNode(link)) return true;
                 }
             }
         }
@@ -410,9 +462,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
         guiGraphics.fill(x, y, x + imageWidth, y + imageHeight, 0xFF4A4A4A); 
         guiGraphics.fill(x + 2, y + 2, x + imageWidth - 2, y + imageHeight - 2, 0xFF222222); 
 
-        // ==========================================
-        // MODE 0: CRAFTING 
-        // ==========================================
         if (mainMode == 0) {
             guiGraphics.fill(x + 6, y + 6, x + 180, y + imageHeight - 6, 0xFF333333);
             guiGraphics.fill(x + 7, y + 20, x + 179, y + imageHeight - 7, 0xFF181818);
@@ -481,12 +530,7 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             }
             this.craftButton.active = canCraft; 
         }
-        
-        // ==========================================
-        // MODE 1: POWER INJECTION & SUIT MODULES
-        // ==========================================
         else if (mainMode == 1) {
-            
             if (subMode == 0) {
                 guiGraphics.fill(x + 6, y + 6, x + 210, y + imageHeight - 6, 0xFF333333);
                 guiGraphics.fill(x + 7, y + 7, x + 209, y + imageHeight - 7, 0xFF181818);
@@ -568,9 +612,6 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
                 int scrollHandleY = scrollTrackY + (int)(batteryScrollOffset * (195 - handleHeight));
                 guiGraphics.fill(scrollTrackX, scrollHandleY, scrollTrackX + 6, scrollHandleY + handleHeight, 0xFFAAAAAA);
             } 
-            // ==========================================
-            // 🔥 SUB-MODE 1: UPGRADE (COMPACT DESIGN)
-            // ==========================================
             else if (subMode == 1) {
                 guiGraphics.fill(x + 6, y + 6, x + 434, y + 254, 0xFF333333);
                 guiGraphics.fill(x + 7, y + 7, x + 433, y + 253, 0xFF0D1117); 
@@ -593,18 +634,18 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
                 if (treeMode == 0) {
                     guiGraphics.drawCenteredString(this.font, "UPGRADE BENCH", x + 284, y + 15, 0xFF00E5FF);
 
-                    if (availableSuits.isEmpty()) {
-                        guiGraphics.drawCenteredString(this.font, "No Upgradable Suits Found.", x + 284, y + 80, 0xFFFF5555);
+                    if (availableGear.isEmpty()) {
+                        guiGraphics.drawCenteredString(this.font, "No Upgradable Gear Found.", x + 284, y + 80, 0xFFFF5555);
                         this.upgradeSuitButton.active = false;
                     } else {
                         this.upgradeSuitButton.active = true;
                         guiGraphics.fill(x + 140, y + 30, x + 425, y + imageHeight - 40, 0xFF4A4A4A);
                         guiGraphics.fill(x + 142, y + 32, x + 423, y + imageHeight - 42, 0xFF181818);
 
-                        for (int i = 0; i < Math.min(6, availableSuits.size()); i++) {
-                            SuitEntry entry = availableSuits.get(i);
+                        for (int i = 0; i < Math.min(6, availableGear.size()); i++) {
+                            GearEntry entry = availableGear.get(i);
                             int rowY = y + 35 + (i * 26);
-                            boolean isSelected = (selectedSuitListIndex == i);
+                            boolean isSelected = (selectedGearListIndex == i);
                             
                             guiGraphics.fill(x + 145, rowY, x + 420, rowY + 22, isSelected ? 0xFF00E5FF : 0xFF4A4A4A);
                             guiGraphics.fill(x + 146, rowY + 1, x + 419, rowY + 21, 0xFF222222);
@@ -617,36 +658,83 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
                             if (entry.slot == -100) guiGraphics.drawString(this.font, "(Equipped)", x + 350, rowY + 7, 0xFFAAAAAA, false);
                         }
 
-                        SuitEntry selectedEntry = availableSuits.get(selectedSuitListIndex);
+                        GearEntry selectedEntry = availableGear.get(selectedGearListIndex);
                         CompoundTag tag = selectedEntry.stack.getOrCreateTag();
-                        int currentHP = 100 + (tag.getBoolean("RigNode_1") ? 50 : 0) + (tag.getBoolean("RigNode_7") ? 50 : 0);
-                        int currentArm = 25 + (tag.getBoolean("RigNode_3") ? 15 : 0) + (tag.getBoolean("RigNode_12") ? 15 : 0);
-                        int currentPwr = 100 + (tag.getBoolean("RigNode_5") ? 50 : 0) + (tag.getBoolean("RigNode_11") ? 50 : 0);
-
+                        
                         guiGraphics.fill(x + 15, y + 80, x + 125, y + 220, 0xFF4A4A4A);
                         guiGraphics.fill(x + 17, y + 82, x + 123, y + 218, 0xFF222222);
                         guiGraphics.drawString(this.font, "SPECIFICATIONS", x + 25, y + 90, 0xFF00E5FF, false);
-                        guiGraphics.drawString(this.font, "HP:  " + currentHP, x + 25, y + 110, tag.getBoolean("RigNode_1") || tag.getBoolean("RigNode_7") ? 0xFF55FF55 : 0xFFAAAAAA, false);
-                        guiGraphics.drawString(this.font, "ARM: " + currentArm, x + 25, y + 125, tag.getBoolean("RigNode_3") || tag.getBoolean("RigNode_12") ? 0xFF55FF55 : 0xFFAAAAAA, false);
-                        guiGraphics.drawString(this.font, "PWR: " + currentPwr, x + 25, y + 140, tag.getBoolean("RigNode_5") || tag.getBoolean("RigNode_11") ? 0xFF55FF55 : 0xFFAAAAAA, false);
+
+                        if (selectedEntry.stack.getItem() instanceof Custom3DArmorItem) {
+                            int currentHP = 100 + (tag.getBoolean("RigNode_1") ? 50 : 0) + (tag.getBoolean("RigNode_7") ? 50 : 0);
+                            int currentArm = 25 + (tag.getBoolean("RigNode_3") ? 15 : 0) + (tag.getBoolean("RigNode_12") ? 15 : 0);
+                            int currentPwr = 100 + (tag.getBoolean("RigNode_5") ? 50 : 0) + (tag.getBoolean("RigNode_11") ? 50 : 0);
+                            
+                            guiGraphics.drawString(this.font, "HP:  " + currentHP, x + 25, y + 110, tag.getBoolean("RigNode_1") || tag.getBoolean("RigNode_7") ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                            guiGraphics.drawString(this.font, "ARM: " + currentArm, x + 25, y + 125, tag.getBoolean("RigNode_3") || tag.getBoolean("RigNode_12") ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                            guiGraphics.drawString(this.font, "PWR: " + currentPwr, x + 25, y + 140, tag.getBoolean("RigNode_5") || tag.getBoolean("RigNode_11") ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                        } else if (selectedEntry.stack.getItem() instanceof PlasmaCutterItem) {
+                            int dmgNodes = 0, capNodes = 0, relNodes = 0;
+                            for (int n = 0; n <= 22; n++) {
+                                if (tag.getBoolean("RigNode_" + n)) {
+                                    if (n==1 || n==9 || n==12 || n==14 || n==15) dmgNodes++;
+                                    if (n==4 || n==5 || n==6 || n==11 || n==16 || n==18 || n==21 || n==22) capNodes++;
+                                    if (n==8 || n==10 || n==13) relNodes++;
+                                }
+                            }
+                            
+                            int currentDmg = 10 + (dmgNodes * 2);
+                            int currentCap = 10 + (capNodes * 2);
+                            String currentRld = (relNodes >= 1) ? "FAST" : "NORM";
+                            
+                            guiGraphics.drawString(this.font, "DMG: " + currentDmg, x + 25, y + 110, dmgNodes > 0 ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                            guiGraphics.drawString(this.font, "CAP: " + currentCap, x + 25, y + 125, capNodes > 0 ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                            guiGraphics.drawString(this.font, "RLD: " + currentRld, x + 25, y + 140, relNodes > 0 ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                        }
                     }
                 } 
                 else if (treeMode == 1) {
                     
-                    int currentHP = 100 + (hasNode(1) ? 50 : 0) + (hasNode(7) ? 50 : 0);
-                    int currentArm = 25 + (hasNode(3) ? 15 : 0) + (hasNode(12) ? 15 : 0);
-                    int currentPwr = 100 + (hasNode(5) ? 50 : 0) + (hasNode(11) ? 50 : 0);
-
                     guiGraphics.fill(x + 15, y + 80, x + 125, y + 220, 0xFF4A4A4A);
                     guiGraphics.fill(x + 17, y + 82, x + 123, y + 218, 0xFF222222);
                     guiGraphics.drawString(this.font, "SPECIFICATIONS", x + 25, y + 90, 0xFF00E5FF, false);
-                    guiGraphics.drawString(this.font, "HP:  " + currentHP, x + 25, y + 110, hasNode(1) || hasNode(7) ? 0xFF55FF55 : 0xFFAAAAAA, false);
-                    guiGraphics.drawString(this.font, "ARM: " + currentArm, x + 25, y + 125, hasNode(3) || hasNode(12) ? 0xFF55FF55 : 0xFFAAAAAA, false);
-                    guiGraphics.drawString(this.font, "PWR: " + currentPwr, x + 25, y + 140, hasNode(5) || hasNode(11) ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                    
+                    GearEntry selectedEntry = availableGear.get(selectedGearListIndex);
+                    
+                    if (selectedEntry.stack.getItem() instanceof Custom3DArmorItem) {
+                        int currentHP = 100 + (hasNode(1) ? 50 : 0) + (hasNode(7) ? 50 : 0);
+                        int currentArm = 25 + (hasNode(3) ? 15 : 0) + (hasNode(12) ? 15 : 0);
+                        int currentPwr = 100 + (hasNode(5) ? 50 : 0) + (hasNode(11) ? 50 : 0);
 
-                    // 🔥 NEW BASE COORDINATES FOR CENTERED TREE
+                        guiGraphics.drawString(this.font, "HP:  " + currentHP, x + 25, y + 110, hasNode(1) || hasNode(7) ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                        guiGraphics.drawString(this.font, "ARM: " + currentArm, x + 25, y + 125, hasNode(3) || hasNode(12) ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                        guiGraphics.drawString(this.font, "PWR: " + currentPwr, x + 25, y + 140, hasNode(5) || hasNode(11) ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                    } else if (selectedEntry.stack.getItem() instanceof PlasmaCutterItem) {
+                        int dmgNodes = 0, capNodes = 0, relNodes = 0;
+                        for (UpgradeNode n : currentSuitNodes) {
+                            if (n.purchased) {
+                                if (n.label.equals("DMG")) dmgNodes++;
+                                if (n.label.equals("CAP")) capNodes++;
+                                if (n.label.equals("REL")) relNodes++;
+                            }
+                        }
+                        int currentDmg = 10 + (dmgNodes * 2);
+                        int currentCap = 10 + (capNodes * 2);
+                        String currentRld = (relNodes >= 1) ? "FAST" : "NORM";
+
+                        guiGraphics.drawString(this.font, "DMG: " + currentDmg, x + 25, y + 110, dmgNodes > 0 ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                        guiGraphics.drawString(this.font, "CAP: " + currentCap, x + 25, y + 125, capNodes > 0 ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                        guiGraphics.drawString(this.font, "RLD: " + currentRld, x + 25, y + 140, relNodes > 0 ? 0xFF55FF55 : 0xFFAAAAAA, false);
+                    }
+
+                    // 🔥 DYNAMIC TREE COORDINATES: KEEP ARMOR AT 180, MOVE WEAPON TO 220
                     int treeX = x + 180; 
                     int treeY = y + 60;
+                    
+                    if (selectedEntry.stack.getItem() instanceof PlasmaCutterItem) {
+                        treeX = x + 220; 
+                        treeY = y + 50;
+                    }
 
                     for (UpgradeNode node : currentSuitNodes) {
                         for (int targetId : node.links) {
@@ -668,18 +756,31 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
                     for (UpgradeNode node : currentSuitNodes) {
                         int nx = treeX + node.x;
                         int ny = treeY + node.y;
-                        int color = node.purchased ? 0xFF00E5FF : 0xFF556677;
+                        
+                        int nodeColor = 0xFF556677; 
+                        if (node.purchased) {
+                            switch(node.label) {
+                                case "DMG": nodeColor = 0xFFFF5555; break; 
+                                case "CAP": nodeColor = 0xFFFF55FF; break; 
+                                case "REL": nodeColor = 0xFF55FF55; break; 
+                                case "ROF": nodeColor = 0xFF5555FF; break; 
+                                case "SP1":
+                                case "SP2":
+                                case "SP3": nodeColor = 0xFFFFFF55; break; 
+                                default:    nodeColor = 0xFF00E5FF; break; 
+                            }
+                        }
                         
                         if (selectedUpgradeNode == node.id) guiGraphics.fill(nx - 8, ny - 8, nx + 8, ny + 8, 0x88FFFFFF);
                         guiGraphics.fill(nx - 6, ny - 6, nx + 6, ny + 6, 0xFF0D1117);
-                        guiGraphics.fill(nx - 4, ny - 4, nx + 4, ny + 4, color);
+                        guiGraphics.fill(nx - 4, ny - 4, nx + 4, ny + 4, nodeColor);
                         if (node.purchased) guiGraphics.fill(nx - 1, ny - 1, nx + 1, ny + 1, 0xFFFFFFFF);
                         
-                        if (!node.label.isEmpty()) {
+                        if (!node.label.isEmpty() && !node.label.equals("START")) {
                             guiGraphics.pose().pushPose();
                             guiGraphics.pose().translate(nx, ny - 15, 0);
                             guiGraphics.pose().scale(0.8F, 0.8F, 1.0F); 
-                            guiGraphics.drawCenteredString(this.font, node.label, 0, 0, color);
+                            guiGraphics.drawCenteredString(this.font, node.label, 0, 0, nodeColor);
                             guiGraphics.pose().popPose();
                         }
                     }
@@ -776,19 +877,27 @@ public class RigWorkbenchScreen extends AbstractContainerScreen<RigWorkbenchMenu
             } 
             else if (subMode == 1) {
                 if (treeMode == 0) {
-                    for (int i = 0; i < Math.min(6, availableSuits.size()); i++) {
+                    for (int i = 0; i < Math.min(6, availableGear.size()); i++) {
                         int rowY = y + 35 + (i * 26);
                         if (mouseX >= x + 145 && mouseX <= x + 420 && mouseY >= rowY && mouseY <= rowY + 22) {
-                            selectedSuitListIndex = i;
+                            selectedGearListIndex = i;
                             Minecraft.getInstance().player.playSound(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.get(), 0.8F, 1.2F);
                             return true;
                         }
                     }
                 }
                 else if (treeMode == 1) {
-                    // 🔥 NEW BASE COORDINATES FOR CENTERED TREE HITBOXES
+                    GearEntry selectedEntry = availableGear.get(selectedGearListIndex);
+                    
+                    // 🔥 DYNAMIC TREE HITBOX COORDINATES
                     int treeX = x + 180;
                     int treeY = y + 60;
+                    
+                    if (selectedEntry.stack.getItem() instanceof PlasmaCutterItem) {
+                        treeX = x + 220;
+                        treeY = y + 50;
+                    }
+
                     for (UpgradeNode node : currentSuitNodes) {
                         int nx = treeX + node.x;
                         int ny = treeY + node.y;

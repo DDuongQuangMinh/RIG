@@ -23,6 +23,8 @@
   "item.rigmod.standard_level_1_boots": "Boots Level 1",
   "item.rigmod.engineering_level_2_boots": "Boots Level 2",
   "block.rigmod.rig_workbench": "RIG Workbench",
+  "item.rigmod.plasma_energy": "Plasma Energy",
+  "item.rigmod.plasma_cutter": "Plasma Cutter",
   "creativetab.rig_tab": "RIG Suit Tech",
   "key.category.rigmod": "RIG Mod Controls",
   "key.rigmod.cycle_vision": "Toggle RIG Visor",

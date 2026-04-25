@@ -48,7 +48,7 @@ public class ModItems {
     public static final RegistryObject<Item> STANDARD_LEVEL_1_LEGGINGS = ITEMS.register("standard_level_1_legging",
             () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.LEGGINGS, new Item.Properties(), "standard_level_1_legging.png", 1));
 
-    // NEW: Boots
+    // Boots
     public static final RegistryObject<Item> STANDARD_LEVEL_1_BOOTS = ITEMS.register("standard_level_1_boots",
             () -> new Custom3DArmorItem(ModArmorMaterials.STANDARD_LEVEL_1, ArmorItem.Type.BOOTS, new Item.Properties(), "standard_level_1_boots.png", 1));
 
@@ -85,6 +85,18 @@ public class ModItems {
     // Engineering Level 2 Boots
     public static final RegistryObject<Item> ENGINEERING_LEVEL_2_BOOTS = ITEMS.register("engineering_level_2_boots",
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant(), "engineering_level_2_boots.png", 2));        
+
+    // NEW: Plasma Energy Ammo Registration!
+    public static final RegistryObject<Item> PLASMA_ENERGY = ITEMS.register("plasma_energy",
+            () -> new Item(new Item.Properties()));
+
+    // NEW: Plasma Cutter Registration!
+    public static final RegistryObject<Item> PLASMA_CUTTER = ITEMS.register("plasma_cutter",
+            () -> new com.rigmod.item.PlasmaCutterItem(new Item.Properties().stacksTo(1)));
+
+    // NEW: Plasma Bullet Dummy Model Registration!
+    public static final RegistryObject<Item> PLASMA_BULLET_MODEL = ITEMS.register("plasma_bullet_model",
+            () -> new Item(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
