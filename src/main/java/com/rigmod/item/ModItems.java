@@ -67,6 +67,10 @@ public class ModItems {
     public static final RegistryObject<Item> ENGINEERING_LEVEL_2_LEGGINGS = ITEMS.register("engineering_level_2_leggings", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant(), "engineering_level_2_leggings.png", 2));
 
+    // Engineering Level 2 Boots
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_BOOTS = ITEMS.register("engineering_level_2_boots",
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant(), "engineering_level_2_boots.png", 2));        
+
 
     // --- LEVEL 3 ARMOR (Tier 3) ---
     
@@ -81,10 +85,16 @@ public class ModItems {
     // Engineering Level 3 Leggings
     public static final RegistryObject<Item> ENGINEERING_LEVEL_3_LEGGINGS = ITEMS.register("engineering_level_3_leggings", 
             () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant(), "engineering_level_3_leggings.png", 3));
-            
-    // Engineering Level 2 Boots
-    public static final RegistryObject<Item> ENGINEERING_LEVEL_2_BOOTS = ITEMS.register("engineering_level_2_boots",
-            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant(), "engineering_level_2_boots.png", 2));        
+
+
+    // --- LEVEL 4 ARMOR (Tier 4) ---
+
+    // Engineering Level 4 Chestplate
+    public static final RegistryObject<Item> ENGINEERING_LEVEL_4_CHESTPLATE = ITEMS.register("engineering_level_4_chestplate", 
+            () -> new Custom3DArmorItem(ModArmorMaterials.LEVEL_2_ENGINEERING, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant(), "engineering_level_4_chestplate.png", 4));
+
+
+    // --- WEAPONS & AMMO ---
 
     // NEW: Plasma Energy Ammo Registration!
     public static final RegistryObject<Item> PLASMA_ENERGY = ITEMS.register("plasma_energy",

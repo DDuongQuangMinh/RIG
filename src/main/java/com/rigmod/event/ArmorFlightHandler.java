@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
@@ -22,19 +23,37 @@ import org.joml.Quaternionf;
 public class ArmorFlightHandler {
 
     public static boolean isStableMode = false;
-    public static float currentRoll = 0.0f;
     public static boolean isFlying = false;
+
+    // THE FIX: Added physics-based roll variables for buttery smooth camera interpolation
+    public static float oRoll = 0.0f; 
+    public static float currentRoll = 0.0f;
+    public static float rollVelocity = 0.0f;
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             Player player = event.player;
             
+            // THE FIX: Update old roll every tick for frame-perfect camera smoothing
+            if (player.level().isClientSide() && player == Minecraft.getInstance().player) {
+                oRoll = currentRoll;
+                currentRoll += rollVelocity;
+                rollVelocity *= 0.85f; // Friction so it gracefully slows down
+                
+                if (isStableMode && !KeyBindings.ROTATE_LEFT_KEY.isDown() && !KeyBindings.ROTATE_RIGHT_KEY.isDown()) {
+                    // Auto-level the camera back to 0 if stable mode is on and no keys are pressed
+                    currentRoll = Mth.lerp(0.1f, currentRoll, 0.0f); 
+                }
+            }
+
             ItemStack chestArmor = player.getItemBySlot(EquipmentSlot.CHEST);
             
+            // THE FIX: Added Level 4 to the flight checks!
             boolean isLevel2 = chestArmor.getItem() == ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get();
             boolean isLevel3 = chestArmor.getItem() == ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get();
-            boolean isWearingFlightArmor = isLevel2 || isLevel3;
+            boolean isLevel4 = chestArmor.getItem() == ModItems.ENGINEERING_LEVEL_4_CHESTPLATE.get();
+            boolean isWearingFlightArmor = isLevel2 || isLevel3 || isLevel4;
 
             if (!player.isCreative() && !player.isSpectator()) {
                 if (isWearingFlightArmor) {
@@ -146,7 +165,14 @@ public class ArmorFlightHandler {
                 isThrusting = true;
             }
 
-            if (KeyBindings.ROTATE_LEFT_KEY.isDown() || KeyBindings.ROTATE_RIGHT_KEY.isDown()) {
+            // THE FIX: Inject physics-based acceleration into the roll velocity instead of snapping the value
+            float rollThrust = 1.5f;
+            if (KeyBindings.ROTATE_LEFT_KEY.isDown()) {
+                ArmorFlightHandler.rollVelocity -= rollThrust;
+                isThrusting = true;
+            }
+            if (KeyBindings.ROTATE_RIGHT_KEY.isDown()) {
+                ArmorFlightHandler.rollVelocity += rollThrust;
                 isThrusting = true;
             }
 
@@ -180,7 +206,6 @@ public class ArmorFlightHandler {
             }
         }
 
-        // 🔥 FIX: Cleaned up the math so flames only rotate sideways (Roll) and never pitch forward!
         private static void spawnAstronautParticles(Player player, RandomSource random) {
             
             Quaternionf rollRot = new Quaternionf().fromAxisAngleDeg(new Vector3f(0, 0, 1), ArmorFlightHandler.currentRoll);

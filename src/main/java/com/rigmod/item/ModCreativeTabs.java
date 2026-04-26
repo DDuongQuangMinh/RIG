@@ -41,6 +41,7 @@ public class ModCreativeTabs {
                 output.accept(ModItems.STANDARD_LEVEL_1_CHEST_WHITE.get());
                 output.accept(ModItems.ENGINEERING_LEVEL_2_CHESTPLATE.get());
                 output.accept(ModItems.ENGINEERING_LEVEL_3_CHESTPLATE.get());
+                output.accept(ModItems.ENGINEERING_LEVEL_4_CHESTPLATE.get());
                 
                 // Add leggings to the tab
                 output.accept(ModItems.STANDARD_LEVEL_1_LEGGINGS.get());

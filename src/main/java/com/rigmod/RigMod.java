@@ -14,7 +14,7 @@ import com.rigmod.client.KeyBindings;
 import com.rigmod.client.RigWorkbenchModel;
 import com.rigmod.client.RigWorkbenchRenderer;
 import com.rigmod.client.RigWorkbenchScreen;
-import com.rigmod.client.renderer.PlasmaBulletRenderer; // 🔥 NEW: Imported your bullet renderer
+import com.rigmod.client.renderer.PlasmaBulletRenderer; 
 import com.rigmod.item.Custom3DArmorItem;
 import com.rigmod.item.ModItems;
 import com.rigmod.item.ModCreativeTabs;
@@ -24,7 +24,7 @@ import com.rigmod.network.packet.CycleRadarModePacket;
 import com.rigmod.network.packet.ReloadWeaponPacket;
 import com.rigmod.block.ModBlocks;
 import com.rigmod.blockentity.ModBlockEntities;
-import com.rigmod.entity.ModEntities; // 🔥 NEW: Imported your Entities registry
+import com.rigmod.entity.ModEntities; 
 import com.rigmod.menu.ModMenuTypes;
 import com.rigmod.event.ArmorFlightHandler; 
 
@@ -35,6 +35,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth; // 🔥 Added for Math Interpolation
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
@@ -86,7 +87,6 @@ public class RigMod {
         ModMenuTypes.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         
-        // NEW: Register your custom Entities!
         ModEntities.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
@@ -190,13 +190,12 @@ public class RigMod {
             event.registerLayerDefinition(com.rigmod.client.model.StandardLevel1BootsModel.LAYER_LOCATION, com.rigmod.client.model.StandardLevel1BootsModel::createBodyLayer);
             event.registerLayerDefinition(com.rigmod.client.model.EngineeringLevel3LeggingsModel.LAYER_LOCATION, com.rigmod.client.model.EngineeringLevel3LeggingsModel::createBodyLayer);
             event.registerLayerDefinition(com.rigmod.client.model.EngineeringLevel2BootsModel.LAYER_LOCATION, com.rigmod.client.model.EngineeringLevel2BootsModel::createBodyLayer);
+            event.registerLayerDefinition(com.rigmod.client.model.EngineeringLevel4ChestplateModel.LAYER_LOCATION, com.rigmod.client.model.EngineeringLevel4ChestplateModel::createBodyLayer);
         }
 
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerBlockEntityRenderer(ModBlockEntities.RIG_WORKBENCH_BE.get(), RigWorkbenchRenderer::new);
-            
-            // 🔥 NEW: Register the Renderer for your Plasma Bullet Entity!
             event.registerEntityRenderer(ModEntities.PLASMA_BULLET.get(), PlasmaBulletRenderer::new);
         }
 
@@ -222,8 +221,13 @@ public class RigMod {
 
         @SubscribeEvent
         public static void onCameraSetup(ViewportEvent.ComputeCameraAngles event) {
-            if (ArmorFlightHandler.currentRoll != 0.0F && event.getCamera().getEntity() instanceof Player) {
-                event.setRoll(event.getRoll() + ArmorFlightHandler.currentRoll);
+            if (event.getCamera().getEntity() instanceof Player) {
+                // 🔥 THE FIX: Butter-smooth frame interpolation using Mth.lerp()
+                float smoothRoll = Mth.lerp((float) event.getPartialTick(), ArmorFlightHandler.oRoll, ArmorFlightHandler.currentRoll);
+                
+                if (smoothRoll != 0.0F) {
+                    event.setRoll(event.getRoll() + smoothRoll);
+                }
             }
         }
 
@@ -241,8 +245,11 @@ public class RigMod {
                     event.getPoseStack().pushPose();
                     event.getPoseStack().translate(0.0D, 1.0D, 0.0D); 
 
-                    if (ArmorFlightHandler.currentRoll != 0.0F) {
-                        event.getPoseStack().mulPose(new org.joml.Quaternionf().fromAxisAngleDeg(new org.joml.Vector3f(0.0f, 0.0f, 1.0f), ArmorFlightHandler.currentRoll));
+                    // 🔥 THE FIX: Apply the exact same smoothing to the player's body so they don't stutter visually!
+                    float smoothRoll = Mth.lerp(event.getPartialTick(), ArmorFlightHandler.oRoll, ArmorFlightHandler.currentRoll);
+                    
+                    if (smoothRoll != 0.0F) {
+                        event.getPoseStack().mulPose(new org.joml.Quaternionf().fromAxisAngleDeg(new org.joml.Vector3f(0.0f, 0.0f, 1.0f), smoothRoll));
                     }
 
                     event.getPoseStack().translate(0.0D, -1.0D, 0.0D);
@@ -283,23 +290,7 @@ public class RigMod {
                 }
             }
 
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null) {
-                if (ArmorFlightHandler.isFlying) {
-                    float rollSpeed = 3.5F; 
-                    if (KeyBindings.ROTATE_LEFT_KEY.isDown()) {
-                        ArmorFlightHandler.currentRoll += rollSpeed; 
-                    }
-                    if (KeyBindings.ROTATE_RIGHT_KEY.isDown()) {
-                        ArmorFlightHandler.currentRoll -= rollSpeed; 
-                    }
-                } else {
-                    ArmorFlightHandler.currentRoll *= 0.8F; 
-                    if (Math.abs(ArmorFlightHandler.currentRoll) < 0.1F) {
-                        ArmorFlightHandler.currentRoll = 0.0F;
-                    }
-                }
-            }
+            // 🔥 THE FIX: Removed the old, laggy manual roll logic here since ArmorFlightHandler now handles physics properly!
         }
 
         @SuppressWarnings("unchecked")

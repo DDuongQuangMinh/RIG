@@ -8,6 +8,7 @@ import com.rigmod.client.Level2ChestplateModel;
 import com.rigmod.client.model.StandardLevel1ChestModel;
 import com.rigmod.client.model.EngineeringLevel3HelmetModel;
 import com.rigmod.client.model.EngineeringLevel3ChestplateModel;
+import com.rigmod.client.model.EngineeringLevel4ChestplateModel;
 import com.rigmod.client.model.EngineeringLevel3LeggingsModel;
 import com.rigmod.client.StandardLevel1HelmetModel;
 import com.rigmod.client.StandardLevel1LeggingsModel;
@@ -101,7 +102,10 @@ public class Custom3DArmorItem extends ArmorItem {
 
     @Override
     public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-        if (this.customTexture != null && !this.customTexture.isEmpty()) return RigMod.MODID + ":textures/models/armor/" + this.customTexture;
+        // FIX: Forces the game to use ONLY your custom texture sheet and prevents it from trying to append "_overlay" or Layer 2 logic
+        if (this.customTexture != null && !this.customTexture.isEmpty()) {
+            return RigMod.MODID + ":textures/models/armor/" + this.customTexture;
+        }
         return super.getArmorTexture(stack, entity, slot, type);
     }
 
@@ -118,7 +122,7 @@ public class Custom3DArmorItem extends ArmorItem {
                 power = chest.getOrCreateTag().getInt("RigPower");
             }
             boolean isVisionActive = false;
-            if (this.armorLevel == 3 && (visionMode == 0 || visionMode == 1)) isVisionActive = true;
+            if (this.armorLevel >= 3 && (visionMode == 0 || visionMode == 1)) isVisionActive = true;
             if (this.armorLevel < 3 && visionMode > 0) isVisionActive = true;
             if (power > 0 && isVisionActive) {
                 if (player.tickCount % 400 == 0) {
@@ -163,7 +167,7 @@ public class Custom3DArmorItem extends ArmorItem {
                         player.displayClientMessage(net.minecraft.network.chat.Component.literal(radarMsg), true);
                     }
                 }
-                else if (this.armorLevel == 3) {
+                else if (this.armorLevel >= 3) {
                     if (visionMode == 0 || visionMode == 1) {
                         MobEffectInstance currentNV = player.getEffect(MobEffects.NIGHT_VISION);
                         if (currentNV == null || currentNV.getDuration() <= 200) player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 220, 0, false, false, false));
@@ -196,22 +200,20 @@ public class Custom3DArmorItem extends ArmorItem {
             }
         }
 
-        // ==========================================
-        // CHESTPLATE LOGIC & UNIVERSAL NODE STATS
-        // ==========================================
         if (this.getType() == Type.CHESTPLATE) {
             CompoundTag tag = stack.getOrCreateTag();
             int power = tag.getInt("RigPower");
-
             if (tag.contains("AttributeModifiers")) tag.remove("AttributeModifiers");
 
             boolean hasArm1 = tag.getBoolean("RigNode_3");
             boolean hasArm2 = tag.getBoolean("RigNode_12");
+            boolean hasArm3 = tag.getBoolean("RigNode_15");
             boolean hasSpd = tag.getBoolean("RigNode_6");
             boolean hasCap1 = tag.getBoolean("RigNode_5");
             boolean hasCap2 = tag.getBoolean("RigNode_11");
+            boolean hasCap3 = tag.getBoolean("RigNode_13");
 
-            int maxPower = 100 + (hasCap1 ? 50 : 0) + (hasCap2 ? 50 : 0);
+            int maxPower = 100 + (hasCap1 ? 50 : 0) + (hasCap2 ? 50 : 0) + (hasCap3 ? 50 : 0);
             if (power > maxPower) {
                 power = maxPower;
                 tag.putInt("RigPower", power);
@@ -222,33 +224,18 @@ public class Custom3DArmorItem extends ArmorItem {
             AttributeInstance armorAttr = player.getAttribute(Attributes.ARMOR);
             AttributeInstance speedAttr = player.getAttribute(Attributes.MOVEMENT_SPEED);
 
-            // 🔥 FORCE REMOVE HEARTS TO CLEAN UP THE HUD
             if (healthAttr != null && healthAttr.getModifier(HEALTH_MODIFIER_UUID) != null) {
                 healthAttr.removeModifier(HEALTH_MODIFIER_UUID);
                 if (player.getHealth() > player.getMaxHealth()) player.setHealth(player.getMaxHealth());
             }
 
             if (power > 0) {
-                /* HEARTS TEMPORARILY DISABLED AS REQUESTED
-                if (healthAttr != null) {
-                    double targetHealth = (this.armorLevel >= 2) ? 20.0D : 8.0D;
-                    if (hasHP1) targetHealth += 10.0D; 
-                    if (hasHP2) targetHealth += 10.0D; 
-                    AttributeModifier currentMod = healthAttr.getModifier(HEALTH_MODIFIER_UUID);
-                    if (currentMod == null || currentMod.getAmount() != targetHealth) {
-                        healthAttr.removeModifier(HEALTH_MODIFIER_UUID);
-                        healthAttr.addTransientModifier(new AttributeModifier(HEALTH_MODIFIER_UUID, "Chestplate health boost", targetHealth, AttributeModifier.Operation.ADDITION));
-                    }
-                }
-                */
-                
                 if (kbAttr != null && this.armorLevel >= 2) {
                     if (kbAttr.getModifier(KNOCKBACK_MODIFIER_UUID) == null) kbAttr.addTransientModifier(new AttributeModifier(KNOCKBACK_MODIFIER_UUID, "Chestplate knockback resistance", 1.0D, AttributeModifier.Operation.ADDITION));
                 }
 
-                // APPLY NODE ARMOR
                 if (armorAttr != null) {
-                    double targetArmor = (hasArm1 ? 4.0D : 0.0D) + (hasArm2 ? 4.0D : 0.0D);
+                    double targetArmor = (hasArm1 ? 4.0D : 0.0D) + (hasArm2 ? 4.0D : 0.0D) + (hasArm3 ? 4.0D : 0.0D);
                     AttributeModifier currentArmMod = armorAttr.getModifier(NODE_ARMOR_UUID);
                     if (targetArmor > 0) {
                         if (currentArmMod == null || currentArmMod.getAmount() != targetArmor) {
@@ -258,7 +245,6 @@ public class Custom3DArmorItem extends ArmorItem {
                     } else if (currentArmMod != null) armorAttr.removeModifier(NODE_ARMOR_UUID);
                 }
 
-                // APPLY NODE SPEED
                 if (speedAttr != null) {
                     double targetSpeed = hasSpd ? 0.15D : 0.0D; 
                     AttributeModifier currentSpdMod = speedAttr.getModifier(NODE_SPEED_UUID);
@@ -277,7 +263,7 @@ public class Custom3DArmorItem extends ArmorItem {
                 if (speedAttr != null && speedAttr.getModifier(NODE_SPEED_UUID) != null) speedAttr.removeModifier(NODE_SPEED_UUID);
             }
 
-            if (this.armorLevel == 3) {
+            if (this.armorLevel >= 3) {
                 if (power >= 2 && player.getHealth() < player.getMaxHealth()) {
                     player.setHealth(player.getMaxHealth()); 
                     tag.putInt("RigPower", power - 2);
@@ -289,71 +275,72 @@ public class Custom3DArmorItem extends ArmorItem {
         }
     }
 
+    private void syncModelRotations(HumanoidModel<?> customModel, HumanoidModel<?> defaultModel) {
+        if (customModel == null || defaultModel == null) return;
+        customModel.head.copyFrom(defaultModel.head);
+        customModel.hat.copyFrom(defaultModel.hat);
+        customModel.body.copyFrom(defaultModel.body);
+        customModel.rightArm.copyFrom(defaultModel.rightArm);
+        customModel.leftArm.copyFrom(defaultModel.leftArm);
+        customModel.rightLeg.copyFrom(defaultModel.rightLeg);
+        customModel.leftLeg.copyFrom(defaultModel.leftLeg);
+    }
+
     @Override
     public void initializeClient(Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
             @Override
             public @NotNull HumanoidModel<?> getHumanoidArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlot armorSlot, HumanoidModel<?> _default) {
+                
+                HumanoidModel<?> customModel = _default;
+
                 if (armorSlot == EquipmentSlot.HEAD) {
-                    if (Custom3DArmorItem.this.armorLevel == 3) {
-                        EngineeringLevel3HelmetModel<?> customModel3 = new EngineeringLevel3HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3HelmetModel.LAYER_LOCATION));
-                        customModel3.young = _default.young; customModel3.crouching = _default.crouching; customModel3.riding = _default.riding; customModel3.rightArmPose = _default.rightArmPose; customModel3.leftArmPose = _default.leftArmPose;
-                        return customModel3;
+                    if (Custom3DArmorItem.this.armorLevel >= 3) {
+                        customModel = new EngineeringLevel3HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3HelmetModel.LAYER_LOCATION));
                     } else if (Custom3DArmorItem.this.armorLevel == 2) {
-                        Level2HelmetModel<?> customModel2 = new Level2HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2HelmetModel.LAYER_LOCATION));
-                        customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
-                        return customModel2;
+                        customModel = new Level2HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2HelmetModel.LAYER_LOCATION));
                     } else {
-                        StandardLevel1HelmetModel<?> customModel1 = new StandardLevel1HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1HelmetModel.LAYER_LOCATION));
-                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
-                        return customModel1;
+                        customModel = new StandardLevel1HelmetModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1HelmetModel.LAYER_LOCATION));
                     }
+                }
+                else if (armorSlot == EquipmentSlot.CHEST) {
+                    if (Custom3DArmorItem.this.armorLevel >= 4) {
+                        customModel = new EngineeringLevel4ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel4ChestplateModel.LAYER_LOCATION));
+                    } else if (Custom3DArmorItem.this.armorLevel == 3) {
+                        customModel = new EngineeringLevel3ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3ChestplateModel.LAYER_LOCATION));
+                    } else if (Custom3DArmorItem.this.armorLevel == 2) {
+                        customModel = new Level2ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2ChestplateModel.LAYER_LOCATION));
+                    } else {
+                        customModel = new StandardLevel1ChestModel<>(StandardLevel1ChestModel.createBodyLayer().bakeRoot());
+                    }
+                }
+                else if (armorSlot == EquipmentSlot.LEGS) {
+                    if (Custom3DArmorItem.this.armorLevel >= 3) {
+                        customModel = new EngineeringLevel3LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3LeggingsModel.LAYER_LOCATION));
+                    } else if (Custom3DArmorItem.this.armorLevel == 2) {
+                        customModel = new com.rigmod.client.model.Level2LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(com.rigmod.client.model.Level2LeggingsModel.LAYER_LOCATION));
+                    } else {
+                        customModel = new StandardLevel1LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
+                    }
+                }
+                else if (armorSlot == EquipmentSlot.FEET) {
+                    if (Custom3DArmorItem.this.armorLevel >= 2) {
+                        customModel = new EngineeringLevel2BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel2BootsModel.LAYER_LOCATION));
+                    } else if (Custom3DArmorItem.this.armorLevel == 1) {
+                        customModel = new StandardLevel1BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1BootsModel.LAYER_LOCATION));
+                    }
+                }
+
+                if (customModel != _default) {
+                    customModel.young = _default.young; 
+                    customModel.crouching = _default.crouching; 
+                    customModel.riding = _default.riding; 
+                    customModel.rightArmPose = _default.rightArmPose; 
+                    customModel.leftArmPose = _default.leftArmPose;
+                    syncModelRotations(customModel, _default);
                 }
                 
-                if (armorSlot == EquipmentSlot.CHEST) {
-                    if (Custom3DArmorItem.this.armorLevel == 3) {
-                        EngineeringLevel3ChestplateModel<?> customModel3 = new EngineeringLevel3ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3ChestplateModel.LAYER_LOCATION));
-                        customModel3.young = _default.young; customModel3.crouching = _default.crouching; customModel3.riding = _default.riding; customModel3.rightArmPose = _default.rightArmPose; customModel3.leftArmPose = _default.leftArmPose;
-                        return customModel3;
-                    } else if (Custom3DArmorItem.this.armorLevel == 2) {
-                        Level2ChestplateModel<?> customModel2 = new Level2ChestplateModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(Level2ChestplateModel.LAYER_LOCATION));
-                        customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
-                        return customModel2;
-                    } else {
-                        StandardLevel1ChestModel<?> customModel1 = new StandardLevel1ChestModel<>(StandardLevel1ChestModel.createBodyLayer().bakeRoot());
-                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
-                        return customModel1;
-                    }
-                }
-
-                if (armorSlot == EquipmentSlot.LEGS) {
-                    if (Custom3DArmorItem.this.armorLevel == 3) {
-                        EngineeringLevel3LeggingsModel<?> customModel3 = new EngineeringLevel3LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel3LeggingsModel.LAYER_LOCATION));
-                        customModel3.young = _default.young; customModel3.crouching = _default.crouching; customModel3.riding = _default.riding; customModel3.rightArmPose = _default.rightArmPose; customModel3.leftArmPose = _default.leftArmPose;
-                        return customModel3;
-                    } else if (Custom3DArmorItem.this.armorLevel == 2) {
-                        com.rigmod.client.model.Level2LeggingsModel<?> customModel2 = new com.rigmod.client.model.Level2LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(com.rigmod.client.model.Level2LeggingsModel.LAYER_LOCATION));
-                        customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
-                        return customModel2;
-                    } else {
-                        StandardLevel1LeggingsModel<?> customModel1 = new StandardLevel1LeggingsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1LeggingsModel.LAYER_LOCATION));
-                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
-                        return customModel1;
-                    }
-                }
-
-                if (armorSlot == EquipmentSlot.FEET) {
-                    if (Custom3DArmorItem.this.armorLevel == 2) {
-                        EngineeringLevel2BootsModel<?> customModel2 = new EngineeringLevel2BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(EngineeringLevel2BootsModel.LAYER_LOCATION));
-                        customModel2.young = _default.young; customModel2.crouching = _default.crouching; customModel2.riding = _default.riding; customModel2.rightArmPose = _default.rightArmPose; customModel2.leftArmPose = _default.leftArmPose;
-                        return customModel2;
-                    } else if (Custom3DArmorItem.this.armorLevel == 1) {
-                        StandardLevel1BootsModel<?> customModel1 = new StandardLevel1BootsModel<>(Minecraft.getInstance().getEntityModels().bakeLayer(StandardLevel1BootsModel.LAYER_LOCATION));
-                        customModel1.young = _default.young; customModel1.crouching = _default.crouching; customModel1.riding = _default.riding; customModel1.rightArmPose = _default.rightArmPose; customModel1.leftArmPose = _default.leftArmPose;
-                        return customModel1;
-                    }
-                }
-                return _default;
+                return customModel;
             }
         });
     }

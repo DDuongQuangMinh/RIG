@@ -19,8 +19,8 @@ public class PowerOverlay {
 
     @SubscribeEvent
     public static void onRenderHUD(RenderGuiOverlayEvent.Post event) {
-        
-        // Wait for the FOOD bar to finish drawing so we can build on top of it
+
+        // Render immediately after the vanilla food bar finishes
         if (event.getOverlay() != VanillaGuiOverlay.FOOD_LEVEL.type()) {
             return;
         }
@@ -31,49 +31,78 @@ public class PowerOverlay {
 
         ItemStack chestplate = player.getItemBySlot(EquipmentSlot.CHEST);
         if (!(chestplate.getItem() instanceof Custom3DArmorItem armor && armor.getArmorLevel() >= 2)) {
-            return; 
+            return;
         }
 
         GuiGraphics guiGraphics = event.getGuiGraphics();
+
         int width = event.getWindow().getGuiScaledWidth();
         int height = event.getWindow().getGuiScaledHeight();
 
-        // Get Power & Max Power
+        // =========================
+        // POWER DATA
+        // =========================
         int power = chestplate.getOrCreateTag().getInt("RigPower");
         boolean hasCap1 = chestplate.getOrCreateTag().getBoolean("RigNode_5");
         boolean hasCap2 = chestplate.getOrCreateTag().getBoolean("RigNode_11");
         int maxPower = 100 + (hasCap1 ? 50 : 0) + (hasCap2 ? 50 : 0);
-        
-        int neonColor = 0xFF00E5FF; 
 
-        // ==========================================
-        // THE DYNAMIC HUD POWER BAR (RIGHT SIDE)
-        // ==========================================
-        int barWidth = 81; // Exactly the width of 10 vanilla food icons
-        int barHeight = 5; // Thickness
+        float powerPct = Math.max(0f, Math.min(1f, (float) power / maxPower));
 
-        int x = (width / 2) + 10; 
+        // =========================
+        // MEKANISM-STYLE COLORS
+        // =========================
+        int powerColor = 0xFF00E5FF; // Bright Cyan Energy
 
-        ForgeGui gui = (ForgeGui) minecraft.gui;
-        
-        // THE FIX: Draw exactly where the Armor bar draws on the left side!
-        // gui.rightHeight is exactly at the Armor Bar level here. 
-        // We add +2 to vertically center our 5px bar perfectly inside the row!
-        int y = height - gui.rightHeight + 2; 
-
-        // 1. Draw the Black Border
-        guiGraphics.fill(x - 1, y - 1, x + barWidth + 1, y + barHeight + 1, 0xFF000000);
-
-        // 2. Draw the Empty Background (Dark Gray)
-        guiGraphics.fill(x, y, x + barWidth, y + barHeight, 0xFF333333);
-
-        // 3. Draw the Colored Power Fill
-        if (power > 0) {
-            int fillWidth = (int) (((float) power / maxPower) * barWidth);
-            guiGraphics.fill(x, y, x + Math.min(fillWidth, barWidth), y + barHeight, neonColor);
+        // Warning colors based on power level
+        if (powerPct <= 0.20f) {
+            // Flash between Red and Dark Red when critical
+            powerColor = (player.tickCount % 20 < 10) ? 0xFFFF3333 : 0xFFAA0000;
+        } else if (powerPct <= 0.50f) {
+            // Solid Orange when half empty
+            powerColor = 0xFFFFAA00;
         }
 
-        // Push the UI row height up by 10 (a full row) so things like Air Bubbles draw above us!
+        // =========================
+        // LAYOUT
+        // =========================
+        int barWidth = 81;   // Exactly the width of the 10 food shanks
+        int barHeight = 4;   // Slim height
+
+        ForgeGui gui = (ForgeGui) minecraft.gui;
+
+        int x = (width / 2) + 10;
+        
+        // 🔥 THE FIX: By adding +2 here, the 8-pixel tall casing slides perfectly into 
+        // the 9-pixel tall space of the armor row, aligning it perfectly!
+        int y = height - gui.rightHeight + 2;
+
+        // =========================
+        // RENDER THE SLIM BAR
+        // =========================
+        
+        // 1. Draw the Mekanism Outer Industrial Casing (Light Gray)
+        guiGraphics.fill(x - 2, y - 2, x + barWidth + 2, y + barHeight + 2, 0xFF4A4A4A);
+        
+        // 2. Draw the Inner Shadow Bevel (Almost Black)
+        guiGraphics.fill(x - 1, y - 1, x + barWidth + 1, y + barHeight + 1, 0xFF111111);
+
+        // 3. Draw the Empty Core Background (Dark Gray)
+        guiGraphics.fill(x, y, x + barWidth, y + barHeight, 0xFF222222);
+
+        // 4. Draw the Solid Energy Fill
+        int fillWidth = (int) (powerPct * barWidth);
+        if (fillWidth > 0) {
+            guiGraphics.fill(x, y, x + fillWidth, y + barHeight, powerColor);
+        }
+
+        // 5. Draw the Internal Gauge Overlay
+        // Draws semi-transparent black ticks every 4 pixels across the slim bar
+        for (int i = 3; i < barWidth; i += 4) {
+            guiGraphics.fill(x + i, y, x + i + 1, y + barHeight, 0x88000000);
+        }
+
+        // Reserve 10 pixels of vertical HUD space so air bubbles draw cleanly above it
         gui.rightHeight += 10;
     }
 }
